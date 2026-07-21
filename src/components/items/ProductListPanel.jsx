@@ -4,7 +4,7 @@ import usePackagingStore from '../../stores/packagingStore';
 import SearchBar from '../common/SearchBar';
 import Modal from '../common/Modal';
 import { BRAND_TYPES, MFG_TYPES } from '../../utils/constants';
-import { parseExcelFile, formatProductsFromExcel } from '../../utils/excelParser';
+import { parseExcelFile, formatProductsFromExcel, downloadProductTemplateExcel } from '../../utils/excelParser';
 
 export default function ProductListPanel() {
   // 스토어에서 제품 목록 및 상태 변경 함수들을 가져옵니다.
@@ -108,6 +108,13 @@ export default function ProductListPanel() {
               title="엑셀 일괄 업로드"
             >
               <Upload size={16} /> 엑셀
+            </button>
+            <button
+              onClick={downloadProductTemplateExcel}
+              className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 text-sm rounded-md transition-colors flex items-center gap-1"
+              title="완제품 일괄등록 양식 다운로드"
+            >
+              양식 다운로드
             </button>
           </div>
         </div>

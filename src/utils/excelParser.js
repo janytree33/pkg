@@ -80,3 +80,50 @@ export const formatProductionReportFromExcel = (rows) => {
     unitPrice: Number(row['생산단가(원)']) || 0,
   })).filter(item => item.prodReportName); // 제품명이 있는 행만 추출
 };
+
+/**
+ * 완제품 일괄 등록 엑셀 양식 다운로드
+ */
+export const downloadProductTemplateExcel = () => {
+  // 양식 헤더 및 예시 데이터
+  const templateData = [
+    {
+      '제품코드': 'PROD-001',
+      '제품명': '제니트리 수분크림',
+      '생산실적보고_제품명': '제니트리 수분크림 100ml',
+      '화장품유형': '기초화장용',
+      '규격': '100ml',
+      '생산실적보고_용량(숫자)': 100,
+      '용도구분': '자사'
+    },
+    {
+      '제품코드': 'PROD-002',
+      '제품명': '제니트리 선크림 (타사예시)',
+      '생산실적보고_제품명': '제니트리 선크림 50g',
+      '화장품유형': '자외선차단용',
+      '규격': '50g',
+      '생산실적보고_용량(숫자)': 50,
+      '용도구분': '타사'
+    }
+  ];
+
+  // 워크시트 생성
+  const ws = XLSX.utils.json_to_sheet(templateData);
+
+  // 컬럼 너비 조정
+  const wscols = [
+    { wch: 15 }, // 제품코드
+    { wch: 25 }, // 제품명
+    { wch: 30 }, // 생산실적보고_제품명
+    { wch: 15 }, // 화장품유형
+    { wch: 10 }, // 규격
+    { wch: 20 }, // 생산실적보고_용량(숫자)
+    { wch: 10 }  // 용도구분
+  ];
+  ws['!cols'] = wscols;
+
+  // 워크북 생성 및 파일 다운로드
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '완제품등록양식');
+  XLSX.writeFile(wb, '완제품_일괄등록_양식.xlsx');
+};
