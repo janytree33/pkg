@@ -117,12 +117,23 @@ const useSettingsStore = create(
 
         if (companyInfo.id) {
           // 기존 정보 수정
-          await supabase.from('company_info').update(payload).eq('id', companyInfo.id);
+          const { error } = await supabase.from('company_info').update(payload).eq('id', companyInfo.id);
+          if (error) {
+            console.error("Update Error:", error);
+            alert("저장 중 오류가 발생했습니다: " + error.message);
+          } else {
+            alert("회사 정보가 성공적으로 저장되었습니다.");
+          }
         } else {
           // 새 정보 등록
-          const { data } = await supabase.from('company_info').insert([payload]).select().single();
+          const { data, error } = await supabase.from('company_info').insert([payload]).select().single();
+          if (error) {
+            console.error("Insert Error:", error);
+            alert("저장 중 오류가 발생했습니다: " + (error.message || JSON.stringify(error)));
+          }
           if (data) {
             set((state) => ({ companyInfo: { ...state.companyInfo, id: data.id } }));
+            alert("회사 정보가 성공적으로 저장되었습니다.");
           }
         }
       },
