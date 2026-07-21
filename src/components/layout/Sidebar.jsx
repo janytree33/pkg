@@ -28,14 +28,17 @@ export default function Sidebar({ collapsed, onToggle }) {
       {/* 로고 영역 */}
       <div className="flex items-center justify-between h-14 px-4 border-b border-slate-100 dark:border-slate-800">
         {!collapsed && (
-          <div className="flex flex-col whitespace-nowrap overflow-hidden">
-            <span className="text-slate-900 dark:text-white font-bold text-lg tracking-wider font-['Inter']">JANYTREE</span>
-            <span className="text-brand-600 dark:text-brand-400 text-[10px] font-semibold uppercase tracking-widest">PACKAGE</span>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <div className="flex flex-col whitespace-nowrap overflow-hidden">
+              <span className="text-slate-900 dark:text-white font-bold text-lg tracking-wider font-['Inter'] leading-none mb-0.5">JANYTREE</span>
+              <span className="text-brand-600 dark:text-brand-400 text-[10px] font-semibold uppercase tracking-widest leading-none">PACKAGE</span>
+            </div>
           </div>
         )}
         {collapsed && (
           <div className="w-full flex justify-center">
-            <span className="text-brand-600 dark:text-brand-400 font-bold text-xl font-['Inter']">J</span>
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
           </div>
         )}
       </div>
