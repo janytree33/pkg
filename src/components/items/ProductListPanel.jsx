@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { Plus, Search, ChevronRight, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, Search, ChevronRight, AlertCircle, Upload } from 'lucide-react';
 import usePackagingStore from '../../stores/packagingStore';
 import SearchBar from '../common/SearchBar';
 import Modal from '../common/Modal';
 import { BRAND_TYPES, MFG_TYPES } from '../../utils/constants';
+import { parseExcelFile, formatProductsFromExcel } from '../../utils/excelParser';
 
 export default function ProductListPanel() {
   // 스토어에서 제품 목록 및 상태 변경 함수들을 가져옵니다.
-  const { finishedProducts, selectedProductId, setSelectedProduct, addFinishedProduct } = usePackagingStore();
+  const { finishedProducts, selectedProductId, setSelectedProduct, addFinishedProduct, uploadProductsFromExcel } = usePackagingStore();
+  
+  const fileInputRef = useRef(null);
   
   // 상태 관리: 검색어, 브랜드 필터, 모달 열림 여부, 폼 데이터
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,7 +20,11 @@ export default function ProductListPanel() {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
+    nameEn: '',
+    cosmeticsType: '일반화장품',
+    spec: '',
     volume: '',
+    weight: 0,
     brandType: BRAND_TYPES[0]?.code || 'OWN',
     mfgType: MFG_TYPES[0]?.code || 'MFG',
   });
@@ -28,6 +35,33 @@ export default function ProductListPanel() {
     const matchesBrand = brandFilter === 'all' || p.brandType === brandFilter;
     return matchesSearch && matchesBrand;
   });
+
+  // 엑셀 업로드 처리 함수
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const rawData = await parseExcelFile(file);
+      const formattedData = formatProductsFromExcel(rawData);
+      
+      if (formattedData.length > 0) {
+        const success = await uploadProductsFromExcel(formattedData);
+        if (success) {
+          alert(`총 ${formattedData.length}건의 완제품이 성공적으로 업로드되었습니다.`);
+        } else {
+          alert('엑셀 업로드 중 오류가 발생했습니다.');
+        }
+      } else {
+        alert('업로드할 데이터가 없거나 양식이 잘못되었습니다.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('엑셀 파일 파싱 중 오류가 발생했습니다.');
+    } finally {
+      e.target.value = null; // 초기화
+    }
+  };
 
   // 새 제품을 등록하는 함수
   const handleAddProduct = () => {
@@ -41,7 +75,7 @@ export default function ProductListPanel() {
     // 모달 닫기 및 폼 초기화
     setIsModalOpen(false);
     setFormData({
-      code: '', name: '', volume: '', 
+      code: '', name: '', nameEn: '', cosmeticsType: '일반화장품', spec: '', volume: '', weight: 0,
       brandType: BRAND_TYPES[0]?.code || 'OWN', 
       mfgType: MFG_TYPES[0]?.code || 'MFG'
     });
@@ -50,16 +84,32 @@ export default function ProductListPanel() {
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
-        {/* 헤더 및 새 제품 등록 버튼 */}
-        <div className="flex justify-between items-center">
+        {/* 헤더 및 버튼 영역 */}
+        <div className="flex justify-between items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">제품 목록</h2>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-            title="새 제품 등록"
-          >
-            <Plus size={20} />
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+              title="새 제품 등록"
+            >
+              <Plus size={20} />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleExcelUpload} 
+              accept=".xlsx, .xls" 
+              className="hidden" 
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-md transition-colors flex items-center gap-1"
+              title="엑셀 일괄 업로드"
+            >
+              <Upload size={16} /> 엑셀
+            </button>
+          </div>
         </div>
         
         {/* 검색 바 */}
@@ -104,15 +154,18 @@ export default function ProductListPanel() {
             >
               <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{product.code}</span>
-                {/* 자사/타사 배지 표시 */}
                 <span className={`text-xs px-2 py-0.5 rounded-full ${isOwnBrand ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
                   {BRAND_TYPES.find(t => t.code === product.brandType)?.label || '타사'}
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">{product.name}</h3>
+              {product.nameEn && <div className="text-[10px] text-gray-400 mb-2">{product.nameEn}</div>}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {product.cosmeticsType && <span className="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300">{product.cosmeticsType}</span>}
+                {product.spec && <span className="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300">{product.spec}</span>}
+              </div>
               <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                 <span>{product.volume}ml</span>
-                {/* 최신 버전 히스토리 배지 표시 */}
                 <span className="flex items-center">
                   <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">{latestVersion}</span>
                 </span>
@@ -140,7 +193,7 @@ export default function ProductListPanel() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">상품명 및 규격</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">상품명</label>
             <input 
               type="text" 
               value={formData.name} 
@@ -149,13 +202,42 @@ export default function ProductListPanel() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">용량 (ml)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">상품명(영문)</label>
             <input 
-              type="number" 
-              value={formData.volume} 
-              onChange={e => setFormData({...formData, volume: e.target.value})}
+              type="text" 
+              value={formData.nameEn} 
+              onChange={e => setFormData({...formData, nameEn: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">화장품유형</label>
+            <input 
+              type="text" 
+              value={formData.cosmeticsType} 
+              onChange={e => setFormData({...formData, cosmeticsType: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">규격</label>
+              <input 
+                type="text" 
+                value={formData.spec} 
+                onChange={e => setFormData({...formData, spec: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">용량/중량</label>
+              <input 
+                type="number" 
+                value={formData.weight} 
+                onChange={e => setFormData({...formData, weight: parseFloat(e.target.value) || 0})}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

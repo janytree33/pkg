@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../common/Modal';
 import { CONTAINER_TYPE_MAP, MATERIAL_OPTIONS, PACKAGING_CATEGORIES } from '../../utils/constants';
+import { Upload } from 'lucide-react';
+import usePackagingStore from '../../stores/packagingStore';
+import { parseExcelFile, formatComponentsFromExcel } from '../../utils/excelParser';
 
 export default function PackagingComponentForm({ isOpen, onClose, onSave, editData }) {
+  const { uploadComponentsFromExcel } = usePackagingStore();
+  const fileInputRef = useRef(null);
+
   // 포장재 정보 폼 상태 관리
   const [formData, setFormData] = useState({
+    regNo: '',
     code: '',
     name: '',
+    spec: '',
     category: PACKAGING_CATEGORIES[0]?.code || '',
+    type: '포장부자재', // 충진부자재, 포장부자재 구분
     containerType: '',
     material: '',
     weightPerUnit: '',
@@ -19,9 +28,12 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
   useEffect(() => {
     if (editData) {
       setFormData({
+        regNo: editData.regNo || '',
         code: editData.code || '',
         name: editData.name || '',
+        spec: editData.spec || '',
         category: editData.category || PACKAGING_CATEGORIES[0]?.code || '',
+        type: editData.type || '포장부자재',
         containerType: editData.containerType || '',
         material: editData.material || '',
         weightPerUnit: editData.weightPerUnit || '',
@@ -30,9 +42,12 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
       });
     } else {
       setFormData({
+        regNo: '',
         code: '',
         name: '',
+        spec: '',
         category: PACKAGING_CATEGORIES[0]?.code || '',
+        type: '포장부자재',
         containerType: '',
         material: '',
         weightPerUnit: '',
@@ -41,6 +56,34 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
       });
     }
   }, [editData, isOpen]);
+
+  // 엑셀 일괄 업로드
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const rawData = await parseExcelFile(file);
+      const formattedData = formatComponentsFromExcel(rawData);
+      
+      if (formattedData.length > 0) {
+        const success = await uploadComponentsFromExcel(formattedData);
+        if (success) {
+          alert(`총 ${formattedData.length}건의 부재료가 성공적으로 업로드되었습니다.`);
+          onClose();
+        } else {
+          alert('엑셀 업로드 중 오류가 발생했습니다.');
+        }
+      } else {
+        alert('업로드할 데이터가 없거나 양식이 잘못되었습니다.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('엑셀 파일 파싱 중 오류가 발생했습니다.');
+    } finally {
+      e.target.value = null; // 초기화
+    }
+  };
 
   // 저장 버튼 클릭 시 호출
   const handleSave = () => {
@@ -56,10 +99,44 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editData ? '포장재 수정' : '새 포장재 등록'} size="lg">
+      {!editData && (
+        <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">엑셀 일괄 업로드</h4>
+            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">대량의 부재료를 한 번에 등록하시려면 엑셀 파일을 업로드하세요.</p>
+          </div>
+          <div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleExcelUpload} 
+              accept=".xlsx, .xls" 
+              className="hidden" 
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Upload size={16} /> 엑셀 업로드
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">포장재코드</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">등록번호</label>
+            <input 
+              type="text" 
+              value={formData.regNo} 
+              onChange={e => setFormData({...formData, regNo: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              placeholder="예: S000001154"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">부재료코드</label>
             <input 
               type="text" 
               value={formData.code} 
@@ -68,13 +145,33 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">포장재명</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">부재료명</label>
             <input 
               type="text" 
               value={formData.name} 
               onChange={e => setFormData({...formData, name: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">규격</label>
+            <input 
+              type="text" 
+              value={formData.spec} 
+              onChange={e => setFormData({...formData, spec: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">종류(구분)</label>
+            <select 
+              value={formData.type} 
+              onChange={e => setFormData({...formData, type: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            >
+              <option value="충진부자재">충진부자재</option>
+              <option value="포장부자재">포장부자재</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">구분 (1차/2차)</label>

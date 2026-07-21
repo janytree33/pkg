@@ -32,8 +32,10 @@ const usePackagingStore = create(
           if (componentsData) {
             set({ packagingComponents: componentsData.map(c => ({
               id: c.id,
+              regNo: c.reg_no,
               code: c.code,
               name: c.name,
+              spec: c.spec,
               type: c.type,
               material: c.material,
               weight: c.weight_g,
@@ -48,7 +50,7 @@ const usePackagingStore = create(
           const { data: productsData } = await supabase
             .from('finished_products')
             .select(`
-              id, code, name, brand_type, net_weight_g, created_at,
+              id, code, name, name_en, cosmetics_type, spec, brand_type, net_weight_g, created_at,
               product_versions (
                 id, version, created_at,
                 bom_items (
@@ -66,6 +68,9 @@ const usePackagingStore = create(
                 id: p.id,
                 code: p.code,
                 name: p.name,
+                nameEn: p.name_en,
+                cosmeticsType: p.cosmetics_type,
+                spec: p.spec,
                 brandType: p.brand_type,
                 weight: p.net_weight_g,
                 createdAt: p.created_at,
@@ -80,8 +85,10 @@ const usePackagingStore = create(
                       return {
                         id: b.id, // bom_items 테이블 ID
                         componentId: b.component_id, // 매핑용 원본 ID
+                        regNo: comp?.reg_no || '',
                         code: comp?.code || '',
                         name: comp?.name || '',
+                        spec: comp?.spec || '',
                         type: comp?.type || '',
                         material: comp?.material || '',
                         weight: comp?.weight_g || 0,
@@ -103,8 +110,10 @@ const usePackagingStore = create(
       // ─── 포장재 등록 (Supabase 동기화) ───
       addPackagingComponent: async (component) => {
         const payload = {
+          reg_no: component.regNo || '',
           code: component.code,
           name: component.name,
+          spec: component.spec || '',
           type: component.type,
           material: component.material,
           weight_g: component.weight || 0,
@@ -137,8 +146,10 @@ const usePackagingStore = create(
         }));
         
         await supabase.from('packaging_components').update({
+          reg_no: updates.regNo,
           code: updates.code,
           name: updates.name,
+          spec: updates.spec,
           type: updates.type,
           material: updates.material,
           weight_g: updates.weight,
@@ -163,6 +174,9 @@ const usePackagingStore = create(
         const productPayload = {
           code: product.code,
           name: product.name,
+          name_en: product.nameEn || '',
+          cosmetics_type: product.cosmeticsType || '',
+          spec: product.spec || '',
           brand_type: product.brandType || '',
           net_weight_g: product.weight || 0
         };
@@ -206,10 +220,62 @@ const usePackagingStore = create(
         await supabase.from('finished_products').update({
           code: updates.code,
           name: updates.name,
+          name_en: updates.nameEn,
+          cosmetics_type: updates.cosmeticsType,
+          spec: updates.spec,
           brand_type: updates.brandType,
           net_weight_g: updates.weight,
           updated_at: new Date().toISOString()
         }).eq('id', id);
+      },
+
+      // ─── 엑셀 일괄 업로드: 완제품 (Supabase Bulk Insert) ───
+      uploadProductsFromExcel: async (products) => {
+        const payload = products.map(p => ({
+          code: p.code,
+          name: p.name,
+          name_en: p.nameEn || '',
+          cosmetics_type: p.cosmeticsType || '',
+          spec: p.spec || '',
+          brand_type: p.brandType || '자사',
+          net_weight_g: p.weight || 0
+        }));
+
+        const { data, error } = await supabase.from('finished_products').insert(payload).select();
+        
+        if (data && !error) {
+          // 완제품별 1.0 버전도 함께 생성
+          const versionsPayload = data.map(d => ({
+            product_id: d.id,
+            version: '1.0'
+          }));
+          await supabase.from('product_versions').insert(versionsPayload);
+          
+          // 새로 전체 데이터를 불러옴 (BOM 구조가 엮여있으므로 fetchData 호출이 안전함)
+          await get().fetchData();
+          return true;
+        }
+        return false;
+      },
+
+      // ─── 엑셀 일괄 업로드: 포장재 (Supabase Bulk Insert) ───
+      uploadComponentsFromExcel: async (components) => {
+        const payload = components.map(c => ({
+          reg_no: c.regNo || '',
+          code: c.code,
+          name: c.name,
+          spec: c.spec || '',
+          type: c.type || '포장부자재',
+          material: c.material || '',
+          weight_g: c.weight || 0,
+        }));
+
+        const { data, error } = await supabase.from('packaging_components').insert(payload).select();
+        if (data && !error) {
+          await get().fetchData();
+          return true;
+        }
+        return false;
       },
 
       // ─── 완제품 삭제 (Supabase 동기화) ───

@@ -54,41 +54,45 @@ export default function BomTab() {
 
   // BOM에 등록된 포장재 중 플라스틱(합성수지) 재질의 중량만 합산하여 하단에 표시하기 위한 계산 로직
   const totalPlasticWeight = currentVersion?.bomItems.reduce((sum, item) => {
-    // BOM에 등록된 부품의 상세 정보를 전체 포장재 목록에서 찾습니다.
     const component = packagingComponents.find(c => c.id === item.componentId);
-    
-    // 합성수지 재질 목록에 속하는지 체크
     if (component && PLASTIC_MATERIALS.includes(component.material)) {
       return sum + (component.weightPerUnit * item.qty);
     }
     return sum;
   }, 0) || 0;
 
-  // 데이터 테이블 구성을 위한 컬럼 정의
+  // 아이템을 충진부자재와 포장부자재로 분리
+  const chargingItems = currentVersion?.bomItems.filter(item => {
+    const comp = packagingComponents.find(c => c.id === item.componentId);
+    return comp && comp.type === '충진부자재';
+  }) || [];
+
+  const packagingItems = currentVersion?.bomItems.filter(item => {
+    const comp = packagingComponents.find(c => c.id === item.componentId);
+    return !comp || comp.type !== '충진부자재'; // 기본값은 포장부자재
+  }) || [];
+
+  // 데이터 테이블 구성을 위한 컬럼 정의 (공통)
   const columns = [
-    { header: 'No', accessor: (row, idx) => idx + 1 },
+    { header: '선택', accessor: () => <input type="checkbox" /> },
     { 
-      header: '부품명', 
-      accessor: row => packagingComponents.find(c => c.id === row.componentId)?.name || '알 수 없음'
+      header: '부재료등록번호', 
+      accessor: row => packagingComponents.find(c => c.id === row.componentId)?.regNo || '-'
     },
     { 
-      header: '재질', 
-      accessor: row => packagingComponents.find(c => c.id === row.componentId)?.material || '-'
-    },
-    { 
-      header: '포장재코드(ERP)', 
+      header: '부재료코드', 
       accessor: row => packagingComponents.find(c => c.id === row.componentId)?.code || '-'
     },
     { 
-      header: '비고/분리여부', 
-      accessor: row => packagingComponents.find(c => c.id === row.componentId)?.remark || '-'
+      header: '부재료명', 
+      accessor: row => packagingComponents.find(c => c.id === row.componentId)?.name || '알 수 없음'
     },
     { 
-      header: '개당 중량(g)', 
-      accessor: row => (packagingComponents.find(c => c.id === row.componentId)?.weightPerUnit || 0).toFixed(6)
+      header: '규격', 
+      accessor: row => packagingComponents.find(c => c.id === row.componentId)?.spec || '-'
     },
     {
-      header: '수량',
+      header: '필요수량',
       accessor: (row) => (
         <input 
           type="number" 
@@ -161,13 +165,43 @@ export default function BomTab() {
         </div>
       </div>
 
-      {/* BOM 리스트 데이터 테이블 영역 */}
-      <div className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-        <DataTable 
-          columns={columns} 
-          data={currentVersion?.bomItems || []} 
-          emptyMessage="BOM에 등록된 포장재가 없습니다. '포장재 추가' 버튼을 눌러 부품을 추가해주세요."
-        />
+      {/* BOM 리스트 영역 */}
+      <div className="flex-1 overflow-auto space-y-6">
+        
+        {/* 충진부자재 현황 */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+              충진부자재 현황 <span className="text-sm font-normal text-gray-500">(총 {chargingItems.length}개)</span>
+            </h3>
+          </div>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
+            <DataTable 
+              columns={columns} 
+              data={chargingItems} 
+              emptyMessage="충진부자재가 없습니다. '포장재 추가' 버튼을 눌러 추가해주세요."
+            />
+          </div>
+        </div>
+
+        {/* 포장부자재 현황 */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+              포장부자재 현황 <span className="text-sm font-normal text-gray-500">(총 {packagingItems.length}개)</span>
+            </h3>
+          </div>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
+            <DataTable 
+              columns={columns} 
+              data={packagingItems} 
+              emptyMessage="포장부자재가 없습니다. '포장재 추가' 버튼을 눌러 추가해주세요."
+            />
+          </div>
+        </div>
+
       </div>
 
       {/* 하단 요약 패널: 합성수지 총 중량 합계 */}
