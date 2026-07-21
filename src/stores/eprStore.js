@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateId } from '../utils/constants';
+import { supabase } from '../lib/supabase';
 
 const useEprStore = create(
   persist(
@@ -16,6 +17,22 @@ const useEprStore = create(
 
       // ─── EPR 신고 취합 결과 ───
       eprSubmissions: [],
+
+      // ─── 데이터 초기 로드 (Supabase) ───
+      fetchData: async () => {
+        const { data } = await supabase.from('epr_reports').select('*');
+        if (data) {
+          set({ eprSubmissions: data.map(r => ({
+            id: r.id,
+            reportYear: r.report_year,
+            fileName: r.file_name,
+            fileUrl: r.file_url,
+            status: r.status,
+            uploadedBy: r.uploaded_by,
+            createdAt: r.created_at
+          })) });
+        }
+      },
 
       // ─── 생산실적 보고서 추가 ───
       addProductionReport: (report) => {
@@ -47,24 +64,37 @@ const useEprStore = create(
         }));
       },
 
-      // ─── EPR 신고 제출 기록 추가 ───
-      addEprSubmission: (submission) => {
-        const newSubmission = {
-          id: generateId(),
-          ...submission,
-          createdAt: new Date().toISOString(),
+      // ─── EPR 신고 제출 기록 추가 (Supabase 동기화) ───
+      addEprSubmission: async (submission) => {
+        const payload = {
+          report_year: submission.reportYear,
+          file_name: submission.fileName || '',
+          file_url: submission.fileUrl || '',
+          status: submission.status || 'pending',
+          uploaded_by: submission.uploadedBy || ''
         };
-        set((state) => ({
-          eprSubmissions: [...state.eprSubmissions, newSubmission],
-        }));
-        return newSubmission;
+        const { data } = await supabase.from('epr_reports').insert([payload]).select().single();
+
+        if (data) {
+          const newSubmission = {
+            id: data.id,
+            ...submission,
+            createdAt: data.created_at,
+          };
+          set((state) => ({
+            eprSubmissions: [...state.eprSubmissions, newSubmission],
+          }));
+          return newSubmission;
+        }
+        return null;
       },
 
-      // ─── EPR 신고 제출 기록 삭제 ───
-      deleteEprSubmission: (id) => {
+      // ─── EPR 신고 제출 기록 삭제 (Supabase 동기화) ───
+      deleteEprSubmission: async (id) => {
         set((state) => ({
           eprSubmissions: state.eprSubmissions.filter((s) => s.id !== id),
         }));
+        await supabase.from('epr_reports').delete().eq('id', id);
       },
     }),
     {

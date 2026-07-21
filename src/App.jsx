@@ -3,6 +3,10 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import useSettingsStore from './stores/settingsStore';
+import usePackagingStore from './stores/packagingStore';
+import useDocumentStore from './stores/documentStore';
+import useEprStore from './stores/eprStore';
+import SplitWorkspace from './components/layout/SplitWorkspace';
 
 // 페이지들
 import Dashboard from './pages/Dashboard';
@@ -48,13 +52,19 @@ function Layout() {
 
 function App() {
   const initTheme = useSettingsStore((state) => state.initTheme);
-  const fetchData = useSettingsStore((state) => state.fetchData);
+  const fetchSettingsData = useSettingsStore((state) => state.fetchData);
+  const fetchPackagingData = usePackagingStore((state) => state.fetchData);
+  const fetchDocumentData = useDocumentStore((state) => state.fetchData);
+  const fetchEprData = useEprStore((state) => state.fetchData);
 
   // 앱 로드 시 테마 초기화 및 데이터 로드
   useEffect(() => {
     initTheme();
-    fetchData(); // Supabase 초기 데이터 로드
-  }, [initTheme, fetchData]);
+    fetchSettingsData(); // 설정/계정 데이터 로드
+    fetchPackagingData(); // 포장재/BOM 데이터 로드
+    fetchDocumentData(); // 사양서 문서 로드
+    fetchEprData(); // EPR 데이터 로드
+  }, [initTheme, fetchSettingsData, fetchPackagingData, fetchDocumentData, fetchEprData]);
 
   return (
     <BrowserRouter>
