@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Building2, Shield, KeyRound } from 'lucide-react';
 import CompanyInfoForm from '../components/settings/CompanyInfoForm';
 import AccountManagementTable from '../components/settings/AccountManagementTable';
+import EprExemptionPanel from '../components/settings/EprExemptionPanel';
 import PageBanner from '../components/common/PageBanner';
 
 export default function Settings() {
