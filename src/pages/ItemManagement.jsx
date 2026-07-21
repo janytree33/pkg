@@ -57,7 +57,7 @@ export default function ItemManagement() {
     <SplitWorkspace
       leftPanel={<ProductListPanel />}
       rightPanel={
-        <div className="flex h-full flex-col bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="flex h-full flex-col bg-white  rounded-lg shadow">
           {/* 탭 그룹 공통 컴포넌트 */}
           <TabGroup tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           {/* 탭 내용 표시 영역 */}

@@ -28,7 +28,7 @@ function Layout() {
   const title = usePageTitle();
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900 transition-theme">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50  transition-theme">
       {/* 상단 헤더 (전체 너비 차지) */}
       <Header title={title} />
       

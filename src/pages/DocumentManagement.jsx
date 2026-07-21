@@ -33,7 +33,7 @@ const DocumentManagement = () => {
       {/* 1. 타이틀 및 검색 바 */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-bold text-gray-800 flex items-center mb-4">
-          <FileText className="mr-2 h-5 w-5 text-blue-600" />
+          <FileText className="mr-2 h-5 w-5 text-brand-500" />
           문서발행 대상 제품
         </h2>
         <SearchBar 
@@ -53,21 +53,21 @@ const DocumentManagement = () => {
               className={`p-4 mb-3 rounded-lg cursor-pointer border transition-colors flex items-center justify-between ${
                 // 현재 클릭하여 선택된 제품일 경우 배경색과 파란색 테두리를 주어 강조합니다.
                 selectedProductId === product.id 
-                  ? 'bg-blue-50 border-blue-400 shadow-sm' 
+                  ? 'bg-brand-50 border-brand-300 shadow-sm' 
                   : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
               }`}
             >
               <div className="flex items-start">
-                <Package className={`mt-1 mr-3 h-5 w-5 ${selectedProductId === product.id ? 'text-blue-500' : 'text-gray-400'}`} />
+                <Package className={`mt-1 mr-3 h-5 w-5 ${selectedProductId === product.id ? 'text-brand-500' : 'text-gray-400'}`} />
                 <div>
                   <div className="font-bold text-gray-800">{product.name}</div>
                   <div className="text-sm text-gray-500">코드: {product.code}</div>
-                  <div className="text-xs text-blue-600 mt-1 font-medium">
+                  <div className="text-xs text-brand-500 mt-1 font-medium">
                     버전 수: {product.versions?.length || 0}개
                   </div>
                 </div>
               </div>
-              <ChevronRight className={`h-5 w-5 ${selectedProductId === product.id ? 'text-blue-500' : 'text-gray-300'}`} />
+              <ChevronRight className={`h-5 w-5 ${selectedProductId === product.id ? 'text-brand-500' : 'text-gray-300'}`} />
             </div>
           ))
         ) : (
@@ -104,9 +104,9 @@ const DocumentManagement = () => {
   return (
     // 공용 레이아웃 컴포넌트인 SplitWorkspace를 사용하여 화면 비율을 30% : 70%로 나눕니다.
     <SplitWorkspace 
-      leftContent={renderLeftPanel()}
-      rightContent={renderRightPanel()}
-      leftWidth="30%"
+      leftPanel={renderLeftPanel()}
+      rightPanel={renderRightPanel()}
+      defaultLeftWidth={320}
     />
   );
 };

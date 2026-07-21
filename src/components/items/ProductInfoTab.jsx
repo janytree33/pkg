@@ -9,6 +9,7 @@ export default function ProductInfoTab() {
   const product = finishedProducts.find(p => p.id === selectedProductId);
   
   // 폼 상태 관리
+  const [formData, setFormData] = useState({
     code: '',
     name: '',
     prodReportName: '',
@@ -58,13 +59,13 @@ export default function ProductInfoTab() {
         <div className="flex gap-2">
           <button 
             onClick={handleDelete}
-            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40"
+            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50   rounded-md hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             삭제
           </button>
           <button 
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            className="px-4 py-2 text-sm font-medium text-white bg-brand-400 text-white font-bold tracking-wide shadow-sm hover:shadow-md rounded-md hover:bg-brand-500"
           >
             저장
           </button>
@@ -74,57 +75,57 @@ export default function ProductInfoTab() {
       {/* 정보 입력 폼 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">완제품코드</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">완제품코드</label>
           <input 
             type="text" 
             value={formData.code} 
             onChange={e => setFormData({...formData, code: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">상품명 및 규격</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">상품명 및 규격</label>
           <input 
             type="text" 
             value={formData.name} 
             onChange={e => setFormData({...formData, name: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
           />
         </div>
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">생산실적보고 매칭 제품명 (중요)</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">생산실적보고 매칭 제품명 (중요)</label>
           <input 
             type="text" 
             value={formData.prodReportName} 
             onChange={e => setFormData({...formData, prodReportName: e.target.value})}
             placeholder="생산실적보고서 엑셀의 '제품명'과 정확히 일치해야 합니다."
-            className="w-full px-3 py-2 border border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-900/10 rounded-md dark:text-white focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-brand-200  bg-brand-50/30  rounded-md  focus:ring-brand-400 focus:border-brand-400"
           />
           <p className="mt-1 text-xs text-gray-500">이 이름이 실적보고서의 제품명과 일치해야 포장재 사용량이 자동 계산됩니다.</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">용량 (ml)</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">용량 (ml)</label>
           <input 
             type="number" 
             value={formData.volume} 
             onChange={e => setFormData({...formData, volume: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
           />
         </div>
         
         {/* EPR 신고 대상 상태 표시 */}
         <div className="flex items-end">
-          <div className={`px-4 py-2 rounded-md text-sm font-medium w-full text-center ${isEprTarget ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+          <div className={`px-4 py-2 rounded-md text-sm font-medium w-full text-center ${isEprTarget ? 'bg-green-100 text-green-800  dark:text-green-300' : 'bg-gray-100 text-gray-800  dark:text-gray-300'}`}>
             {isEprTarget ? 'EPR 신고 대상 제품입니다' : 'EPR 신고 제외 대상입니다'}
           </div>
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">자사/타사 구분</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">자사/타사 구분</label>
           <select 
             value={formData.brandType} 
             onChange={e => setFormData({...formData, brandType: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
           >
             {BRAND_TYPES.map(t => (
               <option key={t.code} value={t.code}>{t.label}</option>
@@ -132,11 +133,11 @@ export default function ProductInfoTab() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">제조/수입 구분</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">제조/수입 구분</label>
           <select 
             value={formData.mfgType} 
             onChange={e => setFormData({...formData, mfgType: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
           >
             {MFG_TYPES.map(t => (
               <option key={t.code} value={t.code}>{t.label}</option>

@@ -108,14 +108,14 @@ export default function ProductMappingTable() {
 
   if (!currentReport) {
     return (
-      <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="p-8 text-center text-gray-500  bg-white  rounded-lg border border-gray-200 dark:border-gray-700">
         먼저 1단계에서 생산실적 엑셀 파일을 업로드해주세요.
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-[600px]">
+    <div className="bg-white  rounded-lg shadow-sm border border-gray-200  flex flex-col h-[600px]">
       {/* 헤더 및 컨트롤 */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
@@ -135,12 +135,12 @@ export default function ProductMappingTable() {
                 placeholder="엑셀 상품명 검색..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                className="w-full pl-9 pr-4 py-2 bg-gray-50  border border-gray-300  rounded-lg text-sm focus:ring-brand-400 focus:border-brand-400 dark:text-white"
               />
             </div>
             
             {/* 자사 브랜드 필터 토글 */}
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300 select-none shrink-0">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700  select-none shrink-0">
               <div className="relative">
                 <input 
                   type="checkbox" 
@@ -148,7 +148,7 @@ export default function ProductMappingTable() {
                   checked={showOnlyOwnBrand}
                   onChange={(e) => setShowOnlyOwnBrand(e.target.checked)}
                 />
-                <div className={`block w-10 h-6 rounded-full transition-colors ${showOnlyOwnBrand ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                <div className={`block w-10 h-6 rounded-full transition-colors ${showOnlyOwnBrand ? 'bg-brand-400 text-white shadow-sm' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
                 <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showOnlyOwnBrand ? 'transform translate-x-4' : ''}`}></div>
               </div>
               <Filter className="w-4 h-4" />
@@ -161,11 +161,11 @@ export default function ProductMappingTable() {
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>매핑 진행률</span>
-            <span className="font-medium text-blue-600 dark:text-blue-400">{progress}% 완료</span>
+            <span className="font-medium text-brand-500 dark:text-brand-400">{progress}% 완료</span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-gray-200  rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+              className="bg-brand-400 text-white font-bold tracking-wide shadow-sm hover:shadow-md h-2 rounded-full transition-all duration-500" 
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -174,28 +174,28 @@ export default function ProductMappingTable() {
 
       {/* 테이블 본문 */}
       <div className="flex-1 overflow-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 relative">
-          <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0 z-10 shadow-sm">
+        <table className="min-w-full divide-y divide-gray-200  relative">
+          <thead className="bg-gray-50  sticky top-0 z-10 shadow-sm">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">상태</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">엑셀 상품명</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/3">시스템 완제품 매핑</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">연간출고량</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  uppercase tracking-wider">상태</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  uppercase tracking-wider">엑셀 상품명</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  uppercase tracking-wider w-1/3">시스템 완제품 매핑</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500  uppercase tracking-wider">연간출고량</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white  divide-y divide-gray-200 dark:divide-gray-700">
             {filteredMappings.map((row) => (
               <tr key={row.id} className={`hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors ${row.status === 'excluded' ? 'bg-gray-50 dark:bg-gray-800/80' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {row.status === 'mapped' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800  dark:text-green-400">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       자사·신고대상
                     </span>
                   )}
                   {row.status === 'excluded' && (
                     <span 
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 cursor-help"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600   cursor-help"
                       title="상표권자가 신고 (자원재활용법 시행령 제18조)"
                     >
                       <Ban className="w-3.5 h-3.5" />
@@ -203,14 +203,14 @@ export default function ProductMappingTable() {
                     </span>
                   )}
                   {row.status === 'unmapped' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800  dark:text-yellow-400">
                       <AlertCircle className="w-3.5 h-3.5" />
                       미매핑
                     </span>
                   )}
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`text-sm ${row.status === 'excluded' ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-200 font-medium'}`}>
+                  <span className={`text-sm ${row.status === 'excluded' ? 'text-gray-400  line-through' : 'text-gray-900  font-medium'}`}>
                     {row.originalName}
                   </span>
                 </td>
@@ -218,7 +218,7 @@ export default function ProductMappingTable() {
                   <select
                     value={row.matchedProductId}
                     onChange={(e) => handleMappingChange(row.id, e.target.value)}
-                    className={`block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white
+                    className={`block w-full text-sm rounded-md border-gray-300  shadow-sm focus:border-brand-400 focus:ring-brand-400   
                       ${row.status === 'excluded' ? 'opacity-70' : ''}
                     `}
                   >
@@ -235,7 +235,7 @@ export default function ProductMappingTable() {
                     type="number"
                     value={row.originalQty}
                     onChange={(e) => handleQtyChange(row.id, e.target.value)}
-                    className="w-24 text-right text-sm rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-24 text-right text-sm rounded-md border-gray-300  shadow-sm focus:border-brand-400 focus:ring-brand-400  dark:text-white"
                     disabled={row.status === 'excluded'}
                   />
                 </td>

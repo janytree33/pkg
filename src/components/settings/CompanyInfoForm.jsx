@@ -12,7 +12,7 @@ import useSettingsStore from '../../stores/settingsStore';
 // 입력 필드 컴포넌트 (리렌더링 시 포커스 잃지 않도록 바깥으로 분리)
 const InputField = ({ label, field, placeholder, type = 'text', form, handleChange }) => (
   <div>
-    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+    <label className="block text-sm font-medium text-slate-700  mb-1">
       {label}
     </label>
     <input
@@ -20,8 +20,8 @@ const InputField = ({ label, field, placeholder, type = 'text', form, handleChan
       value={form[field] || ''}
       onChange={(e) => handleChange(field, e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 
-                 bg-white dark:bg-slate-700 text-slate-900 dark:text-white
+      className="w-full px-3 py-2 rounded-lg border border-slate-300  
+                 bg-white  text-slate-900  
                  focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
                  text-sm transition-all"
     />
@@ -37,8 +37,8 @@ const ImageUploadArea = ({ label, field, inputRef, description, form, handleImag
     <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
     <div className="flex items-start gap-4">
       {/* 미리보기 */}
-      <div className="w-40 h-28 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 
-                      flex items-center justify-center bg-slate-50 dark:bg-slate-800 overflow-hidden">
+      <div className="w-40 h-28 rounded-lg border-2 border-dashed border-slate-300  
+                      flex items-center justify-center bg-slate-50  overflow-hidden">
         {form[field] ? (
           <img src={form[field]} alt={label} className="max-w-full max-h-full object-contain" />
         ) : (
@@ -60,7 +60,7 @@ const ImageUploadArea = ({ label, field, inputRef, description, form, handleImag
         <button
           onClick={() => inputRef.current?.click()}
           className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-brand-600 
-                     bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400
+                     bg-brand-50 hover:bg-brand-100   
                      dark:hover:bg-brand-900/50 rounded-md transition-colors"
         >
           <Upload size={12} />
@@ -70,7 +70,7 @@ const ImageUploadArea = ({ label, field, inputRef, description, form, handleImag
           <button
             onClick={() => handleImageDelete(field)}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-danger-600 
-                       bg-danger-50 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400
+                       bg-danger-50 hover:bg-red-100   
                        dark:hover:bg-red-900/50 rounded-md transition-colors"
           >
             <Trash2 size={12} />
@@ -128,8 +128,8 @@ export default function CompanyInfoForm() {
       {/* ─── 좌측: 입력 폼 ─── */}
       <div className="lg:col-span-2 space-y-6">
         {/* 기본 정보 카드 */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-card">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <div className="bg-white  rounded-xl border border-slate-200  p-6 shadow-card">
+          <h3 className="text-lg font-semibold text-slate-900  mb-4 flex items-center gap-2">
             <Building2 size={20} className="text-brand-500" />
             기본 정보
           </h3>
@@ -151,8 +151,8 @@ export default function CompanyInfoForm() {
         </div>
 
         {/* 이미지 업로드 카드 */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-card">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <div className="bg-white  rounded-xl border border-slate-200  p-6 shadow-card">
+          <h3 className="text-lg font-semibold text-slate-900  mb-4 flex items-center gap-2">
             <Image size={20} className="text-brand-500" />
             로고 및 직인
           </h3>
@@ -185,7 +185,7 @@ export default function CompanyInfoForm() {
             저장
           </button>
           {saved && (
-            <span className="text-sm text-success-600 dark:text-green-400 animate-fade-in">
+            <span className="text-sm text-success-600  animate-fade-in">
               ✅ 저장되었습니다
             </span>
           )}
@@ -194,8 +194,8 @@ export default function CompanyInfoForm() {
 
       {/* ─── 우측: 미리보기 카드 ─── */}
       <div className="lg:col-span-1">
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-card sticky top-6">
-          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider">
+        <div className="bg-white  rounded-xl border border-slate-200  p-6 shadow-card sticky top-6">
+          <h3 className="text-sm font-semibold text-slate-500  mb-4 uppercase tracking-wider">
             미리보기
           </h3>
           {/* 로고 미리보기 */}
@@ -206,7 +206,7 @@ export default function CompanyInfoForm() {
             {form.logo ? (
               <img src={form.logo} alt="Logo" className="h-8 object-contain" />
             ) : (
-              <span className="text-xs text-slate-400 border border-dashed border-slate-300 dark:border-slate-600 px-2 py-1 rounded">
+              <span className="text-xs text-slate-400 border border-dashed border-slate-300  px-2 py-1 rounded">
                 LOGO
               </span>
             )}
@@ -227,7 +227,7 @@ export default function CompanyInfoForm() {
           </div>
           {/* 직인 미리보기 */}
           {form.stamp && (
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+            <div className="mt-4 pt-4 border-t border-slate-100  flex justify-end">
               <img src={form.stamp} alt="Stamp" className="h-16 object-contain opacity-80" />
             </div>
           )}

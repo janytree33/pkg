@@ -27,14 +27,14 @@ export default function EprReporting() {
   };
 
   return (
-    <div className="p-6 space-y-6 h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
+    <div className="p-6 space-y-6 h-full flex flex-col bg-slate-50  overflow-hidden">
       <PageBanner 
         title="EPR 실적신고 관리" 
         description="한국환경공단 제출용 실적 데이터를 집계하고 엑셀로 자동 변환합니다."
       />
 
       {/* 단계별 탭 내비게이션 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-2">
+      <div className="bg-white  rounded-lg shadow-sm border border-gray-200  p-2">
         <nav className="flex flex-col sm:flex-row gap-2">
           {tabs.map((tab, index) => {
             const Icon = tab.icon;
@@ -45,8 +45,8 @@ export default function EprReporting() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium transition-colors
                     ${isActive 
-                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                      ? 'bg-brand-50  text-blue-700  border border-blue-200 dark:border-blue-800' 
+                      : 'text-gray-600  hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
                   <Icon className="w-4 h-4" />

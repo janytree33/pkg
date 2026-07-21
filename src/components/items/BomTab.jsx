@@ -99,7 +99,7 @@ export default function BomTab() {
           value={row.qty} 
           min="1"
           onChange={e => updateBomItem(product.id, currentVersionIdx, row.componentId, { qty: parseInt(e.target.value) || 1 })}
-          className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-white"
+          className="w-16 px-2 py-1 border border-gray-300  rounded text-center  dark:text-white"
         />
       )
     },
@@ -136,7 +136,7 @@ export default function BomTab() {
           <select 
             value={currentVersionIdx} 
             onChange={e => setSelectedVersionIdx(parseInt(e.target.value))}
-            className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white text-sm"
+            className="px-3 py-1.5 border border-gray-300  rounded-md   text-sm"
           >
             {versions.map((v, idx) => (
               <option key={idx} value={idx}>{v.version}</option>
@@ -148,7 +148,7 @@ export default function BomTab() {
           {/* 새 버전 만들기 버튼 */}
           <button 
             onClick={handleCreateNewVersion}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700  bg-white  border border-gray-300  rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <Copy size={16} />
             <span>새 버전 만들기</span>
@@ -157,7 +157,7 @@ export default function BomTab() {
           {/* 포장재 추가 모달 열기 버튼 */}
           <button 
             onClick={() => setIsFormOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-brand-400 text-white font-bold tracking-wide shadow-sm hover:shadow-md rounded-md hover:bg-brand-500 transition-colors"
           >
             <Plus size={16} />
             <span>포장재 추가</span>
@@ -176,7 +176,7 @@ export default function BomTab() {
               충진부자재 현황 <span className="text-sm font-normal text-gray-500">(총 {chargingItems.length}개)</span>
             </h3>
           </div>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="border border-gray-200  rounded-lg">
             <DataTable 
               columns={columns} 
               data={chargingItems} 
@@ -188,12 +188,12 @@ export default function BomTab() {
         {/* 포장부자재 현황 */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+            <div className="w-1 h-4 bg-brand-400 text-white shadow-sm rounded-full"></div>
             <h3 className="font-semibold text-gray-800 dark:text-gray-200">
               포장부자재 현황 <span className="text-sm font-normal text-gray-500">(총 {packagingItems.length}개)</span>
             </h3>
           </div>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="border border-gray-200  rounded-lg">
             <DataTable 
               columns={columns} 
               data={packagingItems} 
@@ -205,9 +205,9 @@ export default function BomTab() {
       </div>
 
       {/* 하단 요약 패널: 합성수지 총 중량 합계 */}
-      <div className="flex justify-end p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
+      <div className="flex justify-end p-4 bg-gray-50  border border-gray-200  rounded-lg mt-4">
         <div className="text-right">
-          <span className="text-sm text-gray-600 dark:text-gray-400 mr-4">합성수지 총 중량 합계:</span>
+          <span className="text-sm text-gray-600  mr-4">합성수지 총 중량 합계:</span>
           <span className="text-lg font-bold text-gray-900 dark:text-white">{totalPlasticWeight.toFixed(6)} g</span>
         </div>
       </div>

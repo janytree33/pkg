@@ -6,15 +6,15 @@ export default function DataTable({
   emptyMessage = '데이터가 없습니다.' 
 }) {
   return (
-    <div className="w-full overflow-hidden bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col h-full">
+    <div className="w-full overflow-hidden bg-white  rounded-lg border border-slate-200  shadow-sm flex flex-col h-full">
       <div className="overflow-x-auto flex-1 h-full">
         <table className="w-full text-sm text-left border-collapse">
-          <thead className="text-xs text-slate-600 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-900/50 sticky top-0 z-10 shadow-sm">
+          <thead className="text-xs text-slate-600  uppercase bg-slate-50  sticky top-0 z-10 shadow-sm">
             <tr>
               {columns.map((col, index) => (
                 <th 
                   key={col.key || index} 
-                  className="px-4 py-3 font-semibold border-b border-slate-200 dark:border-slate-700 whitespace-nowrap"
+                  className="px-4 py-3 font-semibold border-b border-slate-200  whitespace-nowrap"
                   style={{ width: col.width }}
                 >
                   {col.label}
@@ -32,7 +32,7 @@ export default function DataTable({
                   {columns.map((col, colIndex) => (
                     <td 
                       key={col.key || colIndex} 
-                      className="px-4 py-3 text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800"
+                      className="px-4 py-3 text-slate-700  border-b border-slate-100 dark:border-slate-800"
                     >
                       {col.render ? col.render(row[col.key], row) : row[col.key]}
                     </td>

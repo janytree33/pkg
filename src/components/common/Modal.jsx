@@ -53,10 +53,10 @@ export default function Modal({
       <div 
         className={`
           relative w-full ${sizeClasses[size] || sizeClasses.md}
-          bg-white dark:bg-slate-800 
+          bg-white  
           rounded-xl shadow-2xl 
           transform transition-all animate-in zoom-in-95 duration-200
-          border border-slate-200 dark:border-slate-700
+          border border-slate-200  
           flex flex-col max-h-[90vh]
         `}
       >

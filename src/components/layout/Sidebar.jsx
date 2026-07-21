@@ -23,22 +23,18 @@ const iconMap = {
 export default function Sidebar({ collapsed, onToggle }) {
   return (
     <aside 
-      className={`relative flex flex-col min-h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out z-20 flex-shrink-0 ${collapsed ? 'w-[72px]' : 'w-64'}`}
+      className={`relative flex flex-col min-h-full bg-white  border-r border-slate-200  transition-all duration-300 ease-in-out z-20 flex-shrink-0 ${collapsed ? 'w-[72px]' : 'w-64'}`}
     >
       {/* 로고 영역 */}
       <div className="flex items-center justify-between h-14 px-4 border-b border-slate-100 dark:border-slate-800">
         {!collapsed && (
-          <div className="flex items-center gap-2 overflow-hidden">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-            <div className="flex flex-col whitespace-nowrap overflow-hidden">
-              <span className="text-slate-900 dark:text-white font-bold text-lg tracking-wider font-['Inter'] leading-none mb-0.5">JANYTREE</span>
-              <span className="text-brand-600 dark:text-brand-400 text-[10px] font-semibold uppercase tracking-widest leading-none">PACKAGE</span>
-            </div>
+          <div className="flex items-center justify-start overflow-hidden w-full h-full pt-2">
+            <img src="/logo_new.png" alt="Logo" className="h-10 object-contain" />
           </div>
         )}
         {collapsed && (
-          <div className="w-full flex justify-center">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+          <div className="w-full flex justify-center pt-2">
+            <img src="/logo_new.png" alt="Logo" className="h-8 object-contain" />
           </div>
         )}
       </div>
@@ -55,8 +51,8 @@ export default function Sidebar({ collapsed, onToggle }) {
                   className={({ isActive }) =>
                     `flex items-center px-4 py-3 transition-colors group relative ${
                       isActive 
-                        ? 'bg-blue-50/80 dark:bg-blue-900/20 text-brand-700 dark:text-brand-400 font-semibold' 
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+                        ? 'bg-brand-50/80  text-brand-700  font-semibold' 
+                        : 'text-slate-600  hover:bg-white dark:hover:bg-slate-800/50 hover:text-gray-800 dark:hover:text-slate-200'
                     } ${collapsed ? 'justify-center px-0' : ''}`
                   }
                   title={collapsed ? menu.label : ''}
@@ -65,7 +61,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                     <>
                       {/* 활성 탭 좌측 보더 하이라이트 */}
                       {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-600 dark:bg-brand-500 rounded-r" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-600  rounded-r" />
                       )}
                       
                       <Icon size={18} className={`shrink-0 ${collapsed ? '' : 'mr-3'} ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500'}`} />
@@ -84,10 +80,10 @@ export default function Sidebar({ collapsed, onToggle }) {
       </nav>
 
       {/* 접힘/펼침 토글 버튼 (하단) */}
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+      <div className="p-4 border-t border-slate-100  flex justify-center">
         <button
           onClick={onToggle}
-          className="flex items-center justify-center w-8 h-8 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 rounded-full hover:text-brand-600 hover:border-brand-300 transition-colors focus:outline-none"
+          className="flex items-center justify-center w-8 h-8 bg-white  border border-slate-200  text-slate-500 rounded-full hover:text-brand-600 hover:border-brand-300 transition-colors focus:outline-none"
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>

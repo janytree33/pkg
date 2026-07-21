@@ -96,23 +96,23 @@ export default function AccountManagementTable() {
       </div>
 
       {/* 보안 안내 */}
-      <div className="bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800 
+      <div className="bg-amber-50  border border-amber-200  
                       rounded-lg p-3 text-xs text-amber-800 dark:text-amber-300">
         🔒 비밀번호는 AES 암호화되어 브라우저에 저장됩니다. 공용 PC에서는 사용에 주의하세요.
       </div>
 
       {/* 계정 테이블 */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-card">
+      <div className="bg-white  rounded-xl border border-slate-200  overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+              <tr className="bg-slate-50  border-b border-slate-200 dark:border-slate-700">
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">사이트명</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">URL</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">로그인 ID</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">비밀번호</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">비고</th>
-                <th className="text-center px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-24">관리</th>
+                <th className="text-center px-4 py-3 font-semibold text-slate-600  w-24">관리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -125,21 +125,21 @@ export default function AccountManagementTable() {
                         <input
                           value={editForm.siteName || ''}
                           onChange={(e) => setEditForm({ ...editForm, siteName: e.target.value })}
-                          className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                         />
                       </td>
                       <td className="px-4 py-2">
                         <input
                           value={editForm.url || ''}
                           onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
-                          className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                         />
                       </td>
                       <td className="px-4 py-2">
                         <input
                           value={editForm.loginId || ''}
                           onChange={(e) => setEditForm({ ...editForm, loginId: e.target.value })}
-                          className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                         />
                       </td>
                       <td className="px-4 py-2">
@@ -147,14 +147,14 @@ export default function AccountManagementTable() {
                           type="text"
                           value={editForm.password || ''}
                           onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                          className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                         />
                       </td>
                       <td className="px-4 py-2">
                         <input
                           value={editForm.notes || ''}
                           onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                          className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                         />
                       </td>
                       <td className="px-4 py-2">
@@ -181,7 +181,7 @@ export default function AccountManagementTable() {
                               href={account.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-brand-600 dark:text-brand-400 hover:underline truncate max-w-[200px]"
+                              className="text-brand-600  hover:underline truncate max-w-[200px]"
                             >
                               {account.url.replace(/^https?:\/\//, '')}
                             </a>
@@ -214,7 +214,7 @@ export default function AccountManagementTable() {
                       <td className="px-4 py-3">
                         {account.password ? (
                           <div className="flex items-center gap-1">
-                            <span className="text-slate-700 dark:text-slate-300 font-mono text-xs">
+                            <span className="text-slate-700  font-mono text-xs">
                               {showPassword[account.id] ? getDecryptedPassword(account.id) : '••••••••'}
                             </span>
                             <button
@@ -236,7 +236,7 @@ export default function AccountManagementTable() {
                           <span className="text-slate-400">미입력</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                      <td className="px-4 py-3 text-slate-500  text-xs">
                         {account.notes || '-'}
                       </td>
                       <td className="px-4 py-3">
@@ -270,7 +270,7 @@ export default function AccountManagementTable() {
                       value={newForm.siteName}
                       onChange={(e) => setNewForm({ ...newForm, siteName: e.target.value })}
                       placeholder="사이트명"
-                      className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                     />
                   </td>
                   <td className="px-4 py-2">
@@ -278,7 +278,7 @@ export default function AccountManagementTable() {
                       value={newForm.url}
                       onChange={(e) => setNewForm({ ...newForm, url: e.target.value })}
                       placeholder="https://..."
-                      className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                     />
                   </td>
                   <td className="px-4 py-2">
@@ -286,7 +286,7 @@ export default function AccountManagementTable() {
                       value={newForm.loginId}
                       onChange={(e) => setNewForm({ ...newForm, loginId: e.target.value })}
                       placeholder="ID"
-                      className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                     />
                   </td>
                   <td className="px-4 py-2">
@@ -295,7 +295,7 @@ export default function AccountManagementTable() {
                       onChange={(e) => setNewForm({ ...newForm, password: e.target.value })}
                       placeholder="비밀번호"
                       type="text"
-                      className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                     />
                   </td>
                   <td className="px-4 py-2">
@@ -303,7 +303,7 @@ export default function AccountManagementTable() {
                       value={newForm.notes}
                       onChange={(e) => setNewForm({ ...newForm, notes: e.target.value })}
                       placeholder="비고"
-                      className="w-full px-2 py-1 border rounded text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      className="w-full px-2 py-1 border rounded text-sm   dark:text-white"
                     />
                   </td>
                   <td className="px-4 py-2">

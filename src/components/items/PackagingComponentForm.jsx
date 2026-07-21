@@ -100,10 +100,10 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editData ? '포장재 수정' : '새 포장재 등록'} size="lg">
       {!editData && (
-        <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between">
+        <div className="mb-6 p-4 bg-emerald-50  border border-emerald-200  rounded-lg flex items-center justify-between">
           <div>
             <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">엑셀 일괄 업로드</h4>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">대량의 부재료를 한 번에 등록하시려면 엑셀 파일을 업로드하세요.</p>
+            <p className="text-xs text-emerald-600  mt-1">대량의 부재료를 한 번에 등록하시려면 엑셀 파일을 업로드하세요.</p>
           </div>
           <div>
             <input 
@@ -126,59 +126,59 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">등록번호</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">등록번호</label>
             <input 
               type="text" 
               value={formData.regNo} 
               onChange={e => setFormData({...formData, regNo: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
               placeholder="예: S000001154"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">부재료코드</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">부재료코드</label>
             <input 
               type="text" 
               value={formData.code} 
               onChange={e => setFormData({...formData, code: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">부재료명</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">부재료명</label>
             <input 
               type="text" 
               value={formData.name} 
               onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">규격</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">규격</label>
             <input 
               type="text" 
               value={formData.spec} 
               onChange={e => setFormData({...formData, spec: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">종류(구분)</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">종류(구분)</label>
             <select 
               value={formData.type} 
               onChange={e => setFormData({...formData, type: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             >
               <option value="충진부자재">충진부자재</option>
               <option value="포장부자재">포장부자재</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">구분 (1차/2차)</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">구분 (1차/2차)</label>
             <select 
               value={formData.category} 
               onChange={e => setFormData({...formData, category: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             >
               {PACKAGING_CATEGORIES.map(c => (
                 <option key={c.code} value={c.code}>{c.label}</option>
@@ -186,11 +186,11 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">용기 형태</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">용기 형태</label>
             <select 
               value={formData.containerType} 
               onChange={e => setFormData({...formData, containerType: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             >
               <option value="">선택</option>
               {containerOptions.map(c => (
@@ -199,11 +199,11 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">재질</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">재질</label>
             <select 
               value={formData.material} 
               onChange={e => setFormData({...formData, material: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             >
               <option value="">선택</option>
               {MATERIAL_OPTIONS.map(m => (
@@ -212,33 +212,33 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">개당 중량(g)</label>
+            <label className="block text-sm font-medium text-gray-700  mb-1">개당 중량(g)</label>
             <input 
               type="number" 
               step="0.000001"
               value={formData.weightPerUnit} 
               onChange={e => setFormData({...formData, weightPerUnit: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
               placeholder="예: 12.3456"
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">비고/분리여부</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">비고/분리여부</label>
           <input 
             type="text" 
             value={formData.remark} 
             onChange={e => setFormData({...formData, remark: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
             placeholder="특이사항이나 분리배출 표시 여부 등 기록"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">사양서 파일</label>
+          <label className="block text-sm font-medium text-gray-700  mb-1">사양서 파일</label>
           <input 
             type="file" 
             onChange={e => setFormData({...formData, specFile: e.target.files[0]})}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            className="w-full px-3 py-2 border border-gray-300  rounded-md   file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-blue-700 hover:file:bg-brand-100"
           />
         </div>
 
@@ -246,13 +246,13 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button 
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="px-4 py-2 text-sm font-medium text-gray-700  bg-white  border border-gray-300  rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             취소
           </button>
           <button 
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            className="px-4 py-2 text-sm font-medium text-white bg-brand-400 text-white font-bold tracking-wide shadow-sm hover:shadow-md rounded-md hover:bg-brand-500"
           >
             저장
           </button>

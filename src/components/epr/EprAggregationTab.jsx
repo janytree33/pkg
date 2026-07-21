@@ -99,7 +99,7 @@ export default function EprAggregationTab() {
 
   if (!currentReport || !currentReport.mappings || currentReport.mappings.length === 0) {
     return (
-      <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="p-8 text-center text-gray-500  bg-white  rounded-lg border border-gray-200 dark:border-gray-700">
         이전 단계에서 제품 매핑을 완료해주세요.
       </div>
     );
@@ -108,11 +108,11 @@ export default function EprAggregationTab() {
   return (
     <div className="space-y-6">
       {/* 안내 배너 */}
-      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex gap-3">
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+      <div className="bg-brand-50  border border-blue-200  rounded-lg p-4 flex gap-3">
+        <Info className="w-5 h-5 text-brand-500  shrink-0 mt-0.5" />
         <div>
           <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300">자사 브랜드 제품만 EPR 신고 대상입니다.</h4>
-          <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+          <p className="text-sm text-blue-700  mt-1">
             법적 근거: 자원재활용법 시행령 제18조에 따라, 타사 상표가 부착된 제품(OEM/사입 등)은 상표권자가 직접 신고해야 하므로 본 시스템의 신고 취합 목록에서 자동 제외되었습니다.
           </p>
         </div>
@@ -120,39 +120,39 @@ export default function EprAggregationTab() {
 
       {/* 요약 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-center">
-          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">신고 대상 제품 수</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white flex items-baseline gap-2">
+        <div className="bg-white  p-5 rounded-lg border border-gray-200  shadow-sm flex flex-col justify-center">
+          <div className="text-sm font-medium text-gray-500  mb-1">신고 대상 제품 수</div>
+          <div className="text-3xl font-bold text-gray-900  flex items-baseline gap-2">
             {stats.totalItems} <span className="text-sm font-normal text-gray-500">개 품목</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-center">
-          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">총 플라스틱 배출량</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white flex items-baseline gap-2">
+        <div className="bg-white  p-5 rounded-lg border border-gray-200  shadow-sm flex flex-col justify-center">
+          <div className="text-sm font-medium text-gray-500  mb-1">총 플라스틱 배출량</div>
+          <div className="text-3xl font-bold text-gray-900  flex items-baseline gap-2">
             {stats.totalWeightKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-sm font-normal text-gray-500">kg</span>
           </div>
           <div className="text-xs text-gray-400 mt-1">(= {stats.totalWeightTon.toFixed(3)} 톤)</div>
         </div>
 
-        <div className={`p-5 rounded-lg border shadow-sm flex flex-col justify-center relative overflow-hidden ${stats.isExempt ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'}`}>
+        <div className={`p-5 rounded-lg border shadow-sm flex flex-col justify-center relative overflow-hidden ${stats.isExempt ? 'bg-green-50  border-green-200 dark:border-green-800' : 'bg-yellow-50  border-yellow-200 dark:border-yellow-800'}`}>
           <div className={`absolute top-0 right-0 w-16 h-16 opacity-10 ${stats.isExempt ? 'text-green-600' : 'text-yellow-600'}`}>
             <ShieldCheck className="w-full h-full transform translate-x-4 -translate-y-4" />
           </div>
-          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">분담금 면제 여부 판단</div>
+          <div className="text-sm font-medium text-gray-500  mb-1">분담금 면제 여부 판단</div>
           <div className={`text-2xl font-bold flex items-center gap-2 ${stats.isExempt ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
             {stats.isExempt ? '면제 대상' : '납부 대상'}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          <div className="text-xs text-gray-500  mt-2">
             기준: 연간 출고량 4톤 {stats.isExempt ? '미만 (충족)' : '이상 (초과)'}
           </div>
         </div>
       </div>
 
       {/* 테이블 & 다운로드 버튼 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+      <div className="bg-white  rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200  flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h3 className="text-lg font-bold text-gray-900  flex items-center gap-2">
             <Calculator className="w-5 h-5 text-gray-400" />
             신고 대상 제품 상세 목록
           </h3>
@@ -170,15 +170,15 @@ export default function EprAggregationTab() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">제품코드</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">상품명</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">EPR 품목코드</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">연간출고량 (개)</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">개당 플라스틱(g)</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">총 중량 (kg)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  uppercase tracking-wider">제품코드</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  uppercase tracking-wider">상품명</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500  uppercase tracking-wider">EPR 품목코드</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500  uppercase tracking-wider">연간출고량 (개)</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500  uppercase tracking-wider">개당 플라스틱(g)</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500  uppercase tracking-wider">총 중량 (kg)</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white  divide-y divide-gray-200 dark:divide-gray-700">
               {aggregationData.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
@@ -188,7 +188,7 @@ export default function EprAggregationTab() {
                     {item.productName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800  dark:text-gray-300">
                       {item.itemCode}
                     </span>
                   </td>
@@ -198,7 +198,7 @@ export default function EprAggregationTab() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200">
                     {item.unitWeight.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-brand-500 dark:text-brand-400">
                     {(item.totalWeight / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </td>
                 </tr>

@@ -58,7 +58,7 @@ export default function SplitWorkspace({ leftPanel, rightPanel, defaultLeftWidth
       {/* 좌측 패널 */}
       <div 
         style={{ width: `${leftWidth}px` }} 
-        className="shrink-0 flex flex-col h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-colors"
+        className="shrink-0 flex flex-col h-full bg-brand-50/50 border-brand-100  border-r border-slate-200  transition-colors"
       >
         {leftPanel}
       </div>
@@ -66,12 +66,12 @@ export default function SplitWorkspace({ leftPanel, rightPanel, defaultLeftWidth
       {/* 리사이저 (구분선) */}
       <div
         onMouseDown={handleMouseDown}
-        className={`w-1 cursor-col-resize hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors z-10 ${isDragging ? 'bg-blue-500' : 'bg-transparent'}`}
+        className={`w-1 cursor-col-resize hover:bg-blue-400 dark:hover:bg-brand-400 text-white shadow-sm transition-colors z-10 ${isDragging ? 'bg-brand-400 text-white shadow-sm' : 'bg-transparent'}`}
         title="드래그하여 크기 조절"
       />
 
       {/* 우측 패널 */}
-      <div className="flex-1 flex flex-col h-full bg-white dark:bg-slate-800 min-w-0 transition-colors overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-white  min-w-0 transition-colors overflow-hidden">
         {rightPanel}
       </div>
     </div>

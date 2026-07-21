@@ -82,18 +82,18 @@ export default function FileUpload({
         className={`
           relative border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors cursor-pointer
           ${dragActive 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-            : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+            ? 'border-brand-400 bg-brand-50 dark:bg-blue-900/20' 
+            : 'border-slate-300  hover:bg-slate-50 dark:hover:bg-slate-800'
           }
           ${selectedFile ? 'bg-slate-50 dark:bg-slate-800' : ''}
         `}
       >
         {selectedFile ? (
-          <div className="flex items-center justify-between w-full p-3 bg-white dark:bg-slate-700 rounded-md shadow-sm border border-slate-200 dark:border-slate-600">
+          <div className="flex items-center justify-between w-full p-3 bg-white  rounded-md shadow-sm border border-slate-200 dark:border-slate-600">
             <div className="flex items-center space-x-3 overflow-hidden">
-              <FileIcon className="text-blue-500 shrink-0" size={24} />
+              <FileIcon className="text-brand-500 shrink-0" size={24} />
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+                <span className="text-sm font-medium text-slate-700  truncate">
                   {selectedFile.name}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -111,16 +111,16 @@ export default function FileUpload({
           </div>
         ) : (
           <>
-            <div className="w-12 h-12 mb-3 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+            <div className="w-12 h-12 mb-3 flex items-center justify-center rounded-full bg-brand-100  text-brand-500 dark:text-brand-400">
               <Upload size={24} />
             </div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 text-center mb-1">
+            <p className="text-sm font-medium text-slate-700  text-center mb-1">
               {label}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+            <p className="text-xs text-slate-500  text-center">
               파일을 드래그하여 놓거나 클릭하여 선택하세요
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+            <p className="text-xs text-slate-400  mt-2">
               지원 형식: {accept}
             </p>
           </>
