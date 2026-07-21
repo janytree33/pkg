@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import useEprStore from '../../stores/eprStore';
+import { formatProductionReportFromExcel } from '../../utils/excelParser';
 
 /**
  * ExcelUpload.jsx
@@ -31,10 +32,11 @@ export default function ExcelUpload({ onNextStep }) {
         const worksheet = workbook.Sheets[firstSheetName];
         
         // JSON으로 변환 (첫 행을 헤더로 사용)
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const rawJsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        const jsonData = formatProductionReportFromExcel(rawJsonData);
         
         if (jsonData.length === 0) {
-          setError('엑셀 파일에 데이터가 없습니다.');
+          setError('엑셀 파일에 유효한 생산실적 데이터(제품명)가 없습니다.');
           return;
         }
 

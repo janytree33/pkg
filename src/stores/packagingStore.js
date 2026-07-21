@@ -50,7 +50,7 @@ const usePackagingStore = create(
           const { data: productsData } = await supabase
             .from('finished_products')
             .select(`
-              id, code, name, name_en, cosmetics_type, spec, brand_type, net_weight_g, created_at,
+              id, code, name, name_en, cosmetics_type, spec, brand_type, net_weight_g, prod_report_name, created_at,
               product_versions (
                 id, version, created_at,
                 bom_items (
@@ -73,6 +73,7 @@ const usePackagingStore = create(
                 spec: p.spec,
                 brandType: p.brand_type,
                 weight: p.net_weight_g,
+                prodReportName: p.prod_report_name || '',
                 createdAt: p.created_at,
                 versions: sortedVersions.map(v => {
                   return {
@@ -178,7 +179,8 @@ const usePackagingStore = create(
           cosmetics_type: product.cosmeticsType || '',
           spec: product.spec || '',
           brand_type: product.brandType || '',
-          net_weight_g: product.weight || 0
+          net_weight_g: product.weight || 0,
+          prod_report_name: product.prodReportName || ''
         };
         const { data: prodData } = await supabase.from('finished_products').insert([productPayload]).select().single();
         
@@ -225,6 +227,7 @@ const usePackagingStore = create(
           spec: updates.spec,
           brand_type: updates.brandType,
           net_weight_g: updates.weight,
+          prod_report_name: updates.prodReportName,
           updated_at: new Date().toISOString()
         }).eq('id', id);
       },
@@ -238,7 +241,8 @@ const usePackagingStore = create(
           cosmetics_type: p.cosmeticsType || '',
           spec: p.spec || '',
           brand_type: p.brandType || '자사',
-          net_weight_g: p.weight || 0
+          net_weight_g: p.weight || 0,
+          prod_report_name: p.prodReportName || ''
         }));
 
         const { data, error } = await supabase.from('finished_products').insert(payload).select();

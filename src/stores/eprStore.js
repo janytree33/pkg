@@ -64,6 +64,64 @@ const useEprStore = create(
         }));
       },
 
+      // ─── EPR 결과 산출 로직 ───
+      calculateEprResult: (parsedRows, finishedProducts) => {
+        let matchedCount = 0;
+        let unmatchedCount = 0;
+        const results = [];
+
+        parsedRows.forEach(row => {
+          // 완제품 중 prod_report_name이 일치하는 항목 찾기 (공백 제거 후 비교)
+          const match = finishedProducts.find(p => 
+            p.prodReportName && 
+            p.prodReportName.trim() === row.prodReportName.trim()
+          );
+          
+          if (match) {
+            matchedCount++;
+            const latestVersion = match.versions && match.versions.length > 0 ? match.versions[match.versions.length - 1] : null;
+            const bomItems = latestVersion ? (latestVersion.bomItems || []) : [];
+            
+            let totalWeight = 0;
+            const componentDetails = [];
+            
+            bomItems.forEach(bom => {
+              const compTotal = (bom.weight || 0) * (bom.qty || 1) * row.quantity;
+              totalWeight += compTotal;
+              componentDetails.push({
+                type: bom.type,
+                material: bom.material,
+                name: bom.name,
+                weight: compTotal
+              });
+            });
+
+            results.push({
+              no: row.no,
+              prodReportName: row.prodReportName,
+              matchedCode: match.code,
+              matchedName: match.name,
+              quantity: row.quantity,
+              totalWeight,
+              componentDetails
+            });
+          } else {
+            unmatchedCount++;
+            results.push({
+              no: row.no,
+              prodReportName: row.prodReportName,
+              matchedCode: '매칭실패',
+              matchedName: '-',
+              quantity: row.quantity,
+              totalWeight: 0,
+              componentDetails: []
+            });
+          }
+        });
+        
+        return { matchedCount, unmatchedCount, results };
+      },
+
       // ─── EPR 신고 제출 기록 추가 (Supabase 동기화) ───
       addEprSubmission: async (submission) => {
         const payload = {

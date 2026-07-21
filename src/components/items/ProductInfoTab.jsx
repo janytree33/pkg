@@ -9,9 +9,9 @@ export default function ProductInfoTab() {
   const product = finishedProducts.find(p => p.id === selectedProductId);
   
   // 폼 상태 관리
-  const [formData, setFormData] = useState({
     code: '',
     name: '',
+    prodReportName: '',
     volume: '',
     brandType: '',
     mfgType: ''
@@ -23,6 +23,7 @@ export default function ProductInfoTab() {
       setFormData({
         code: product.code || '',
         name: product.name || '',
+        prodReportName: product.prodReportName || '',
         volume: product.volume || '',
         brandType: product.brandType || (BRAND_TYPES[0]?.code || 'OWN'),
         mfgType: product.mfgType || (MFG_TYPES[0]?.code || 'MFG')
@@ -89,6 +90,17 @@ export default function ProductInfoTab() {
             onChange={e => setFormData({...formData, name: e.target.value})}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
           />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">생산실적보고 매칭 제품명 (중요)</label>
+          <input 
+            type="text" 
+            value={formData.prodReportName} 
+            onChange={e => setFormData({...formData, prodReportName: e.target.value})}
+            placeholder="생산실적보고서 엑셀의 '제품명'과 정확히 일치해야 합니다."
+            className="w-full px-3 py-2 border border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-900/10 rounded-md dark:text-white focus:ring-blue-500 focus:border-blue-500"
+          />
+          <p className="mt-1 text-xs text-gray-500">이 이름이 실적보고서의 제품명과 일치해야 포장재 사용량이 자동 계산됩니다.</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">용량 (ml)</label>

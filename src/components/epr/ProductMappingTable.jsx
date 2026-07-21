@@ -22,43 +22,31 @@ export default function ProductMappingTable() {
   const [showOnlyOwnBrand, setShowOnlyOwnBrand] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const calculateEprResult = useEprStore(state => state.calculateEprResult);
+
   // 1. 초기 로드 시 자동 매핑 시도
   useEffect(() => {
     if (currentReport && currentReport.data && mappings.length === 0) {
-      const initialMappings = currentReport.data.map((row, index) => {
-        // 엑셀에서 상품명과 수량 컬럼 찾기 (유연한 파싱)
-        const rowKeys = Object.keys(row);
+      // 엑셀에서 추출한 생산실적보고 데이터를 calculateEprResult에 넘겨 매핑 결과를 받음
+      const { results } = calculateEprResult(currentReport.data, finishedProducts);
+      
+      const initialMappings = results.map((res, index) => {
+        // 매칭된 제품 객체 찾기
+        const matchedProduct = finishedProducts.find(p => p.code === res.matchedCode);
         
-        // 상품명으로 추정되는 컬럼 찾기
-        const nameKey = rowKeys.find(k => k.includes('상품명') || k.includes('제품명') || k.includes('품명')) || rowKeys[0];
-        const excelProductName = row[nameKey] ? String(row[nameKey]) : '';
-        
-        // 수량으로 추정되는 컬럼 찾기
-        const qtyKey = rowKeys.find(k => k.includes('수량') || k.includes('출고량') || k.includes('생산량')) || rowKeys[1];
-        const qty = row[qtyKey] ? parseInt(String(row[qtyKey]).replace(/,/g, ''), 10) : 0;
-
-        // 시스템 완제품과 퍼지 매칭 (이름이 포함되어 있는지 확인)
-        let matchedProduct = null;
-        if (excelProductName) {
-          matchedProduct = finishedProducts.find(p => 
-            p.productName.toLowerCase().includes(excelProductName.toLowerCase()) || 
-            excelProductName.toLowerCase().includes(p.productName.toLowerCase())
-          );
-        }
-
         return {
           id: `row_${index}`,
-          originalName: excelProductName,
-          originalQty: isNaN(qty) ? 0 : qty,
+          originalName: res.prodReportName,
+          originalQty: res.quantity,
           matchedProductId: matchedProduct ? matchedProduct.id : '',
           // 매핑 상태: 'mapped', 'excluded' (타사), 'unmapped'
           status: matchedProduct ? (matchedProduct.brandType === '타사' ? 'excluded' : 'mapped') : 'unmapped',
-          excelRow: row
+          excelRow: currentReport.data[index]
         };
       });
       setMappings(initialMappings);
     }
-  }, [currentReport, finishedProducts, mappings.length]);
+  }, [currentReport, finishedProducts, mappings.length, calculateEprResult]);
 
   // 2. 수동 매핑 변경 핸들러
   const handleMappingChange = (rowId, productId) => {
@@ -237,7 +225,7 @@ export default function ProductMappingTable() {
                     <option value="">-- 완제품 선택 --</option>
                     {finishedProducts.map(p => (
                       <option key={p.id} value={p.id}>
-                        [{p.productCode}] {p.productName} ({p.brandType})
+                        [{p.code}] {p.name} ({p.brandType})
                       </option>
                     ))}
                   </select>

@@ -42,11 +42,12 @@ export const formatProductsFromExcel = (rows) => {
   return rows.map(row => ({
     cosmeticsType: row['화장품유형'] || row['cosmetics_type'] || '',
     code: row['제품코드'] || row['code'] || '',
-    name: row['제품한글명'] || row['제품명'] || row['name'] || '',
-    nameEn: row['제품영문명'] || row['name_en'] || '',
+    name: row['ERP_제품한글명'] || row['제품한글명'] || row['제품명'] || row['name'] || '',
+    nameEn: row['ERP_제품영문명'] || row['제품영문명'] || row['name_en'] || '',
     spec: row['규격'] || row['spec'] || '',
-    brandType: '자사', // 디폴트
-    weight: 0
+    prodReportName: row['생산실적보고_제품명'] || row['prod_report_name'] || '',
+    brandType: (row['용도구분'] && row['용도구분'].includes('타사')) ? '타사' : '자사',
+    weight: Number(row['생산실적보고_용량(숫자)']) || 0
   })).filter(item => item.code && item.name); // 필수값 검증
 };
 
@@ -63,4 +64,19 @@ export const formatComponentsFromExcel = (rows, defaultType = '포장부자재')
     material: '',
     weight: 0
   })).filter(item => item.code && item.name);
+};
+
+/**
+ * 생산실적보고서 엑셀 데이터를 규격에 맞게 변환
+ */
+export const formatProductionReportFromExcel = (rows) => {
+  return rows.map(row => ({
+    no: row['순번'] || row['No'] || '',
+    prodReportName: row['제품명(국문)'] || row['제품명'] || '',
+    manufacturer: row['제조업자(국문)'] || '',
+    capacity: row['용량(숫자)'] || 0,
+    unit: row['단위'] || '',
+    quantity: Number(row['생산량(개)']) || 0,
+    unitPrice: Number(row['생산단가(원)']) || 0,
+  })).filter(item => item.prodReportName); // 제품명이 있는 행만 추출
 };

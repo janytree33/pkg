@@ -41,18 +41,15 @@ export default function EprAggregationTab() {
 
         // BOM을 순회하며 플라스틱 중량 합산
         latestVersion.bomItems.forEach(bomItem => {
-          const comp = packagingComponents.find(c => c.id === bomItem.packagingId);
-          if (comp) {
-            // 플라스틱 재질인 경우만 합산
-            if (PLASTIC_MATERIALS.includes(comp.material)) {
-              totalPlasticWeightPerUnit += (comp.weight || 0) * (bomItem.qty || 1);
-            }
-            
-            // 1차 포장(용기 본체)인 경우 EPR 품목코드 결정
-            if (comp.category === '1차' && !eprItemCode) {
-              const matchedType = CONTAINER_TYPE_MAP.find(t => t.label === comp.containerType);
-              if (matchedType) eprItemCode = matchedType.code;
-            }
+          // 플라스틱 재질인 경우만 합산
+          if (PLASTIC_MATERIALS.includes(bomItem.material)) {
+            totalPlasticWeightPerUnit += (bomItem.weight || 0) * (bomItem.qty || 1);
+          }
+          
+          // 1차 포장(용기 본체)인 경우 EPR 품목코드 결정
+          if (bomItem.type === '1차포장' && !eprItemCode) {
+            // 여기서는 단순화하여 기본값 사용
+            eprItemCode = '0450';
           }
         });
 
@@ -60,8 +57,8 @@ export default function EprAggregationTab() {
         result.push({
           id: mapping.id,
           productId: product.id,
-          productCode: product.productCode,
-          productName: product.productName,
+          productCode: product.code,
+          productName: product.name,
           mfgType: product.mfgType || '제조',
           brandType: product.brandType || '자사',
           annualVolume: mapping.originalQty,
