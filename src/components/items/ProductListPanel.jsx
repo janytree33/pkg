@@ -6,7 +6,7 @@
  * - 카드 디자인 개선, BOM 등록 현황 뱃지
  */
 import React, { useState, useRef } from 'react';
-import { Plus, Upload, Download, Search, AlertCircle, FileSpreadsheet, X, ChevronRight, Layers } from 'lucide-react';
+import { Plus, Upload, Download, Search, AlertCircle, Package, ChevronRight, Layers } from 'lucide-react';
 import usePackagingStore from '../../stores/packagingStore';
 import Modal from '../common/Modal';
 import { BRAND_TYPES, MFG_TYPES } from '../../utils/constants';
