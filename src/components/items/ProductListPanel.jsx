@@ -348,35 +348,42 @@ export default function ProductListPanel() {
           </div>
 
           <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col style={{ width: '200px' }} />
+                <col style={{ width: '70px' }} />
+                <col />
+                <col style={{ width: '110px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">열 이름 (1행에 입력)</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600">필수</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 whitespace-nowrap">열 이름 (1행에 입력)</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 whitespace-nowrap">필수여부</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">설명</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">예시</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 whitespace-nowrap">예시</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {PRODUCT_EXCEL_COLUMNS.map((col, i) => (
                   <tr key={i} className={col.important ? 'bg-amber-50' : 'hover:bg-slate-50'}>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <code className="text-sm font-mono font-bold text-slate-800">{col.name}</code>
-                      {col.important && <span className="ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">⭐ 중요</span>}
+                      {col.important && <span className="ml-1 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full whitespace-nowrap">⭐ 중요</span>}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
                       {col.required
-                        ? <span className="text-[11px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">필수</span>
-                        : <span className="text-[11px] text-slate-400">선택</span>
+                        ? <span className="text-[11px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">필수</span>
+                        : <span className="text-[11px] text-slate-400 whitespace-nowrap">선택</span>
                       }
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-600">{col.desc}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500 font-mono">{col.example}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">{col.example}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
 
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
             💡 <strong>생산실적보고_제품명</strong>은 나중에 EPR 신고 시 생산실적보고서와 자동 매칭되는 핵심 필드입니다.<br />
