@@ -340,7 +340,7 @@ export default function ProductListPanel() {
       </Modal>
 
       {/* ─── 엑셀 컬럼 안내 팝업 ★ 핵심 기능 ─── */}
-      <Modal isOpen={isGuideModalOpen} onClose={() => setIsGuideModalOpen(false)} title="📋 완제품 엑셀 업로드 - 열 이름 안내" size="lg">
+      <Modal isOpen={isGuideModalOpen} onClose={() => setIsGuideModalOpen(false)} title="📋 완제품 엑셀 업로드 - 열 이름 안내" size="2xl">
         <div className="space-y-4">
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
             엑셀 파일의 <strong>첫 번째 행(1행)</strong>을 아래 열 이름으로 작성해야 정상적으로 업로드됩니다.<br />
