@@ -22,21 +22,103 @@ export const CONTAINER_TYPE_MAP = [
 // ─── 포장재 재질 목록 ───
 export const MATERIAL_OPTIONS = [
   'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC',
-  'Glass (유리병)', 'Aluminium', 'Steel', 
-  'Paper (단상자/제외)', 'Paper Pack (종이팩)', 
-  'Film/Sheet (필름/수축비닐)', 'PP/PE', 'PE/EVA/AL', '기타',
+  'Glass (유리병)', 'Aluminium', 'Steel',
+  'Paper (단상자/제외)', 'Paper Pack (종이팩)',
+  'Film/Sheet (필름/수축비닐)', 'Foam (발포합성수지)',
+  'PP/PE', 'PE/EVA/AL', '기타',
 ];
 
 // ─── 플라스틱/합성수지 재질 목록 (EPR 중량 합산 대상) ───
-// 유리나 금속은 제외, 플라스틱/합성수지만 EPR 중량에 포함
 export const PLASTIC_MATERIALS = [
-  'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC',
-  'PP/PE', 'PE/EVA/AL', 'Film/Sheet (필름/수축비닐)'
+  'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL',
 ];
 
-// 법령 기준 타겟 그룹
+// ─── EPR 법령 기준: 재질 그룹별 면제 기준 ───
+// 『자원재활용법 시행령』 별표 4 기준
+export const EPR_MATERIAL_GROUPS = [
+  {
+    id: 'plastic',
+    label: '합성수지류 (플라스틱)',
+    shortLabel: '합성수지',
+    materials: ['PET', 'PP', 'PE', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL'],
+    exemptionTonnes: 4,
+    color: '#10b981',
+    bgColor: '#f0fdf4',
+    borderColor: '#bbf7d0',
+    icon: '🧪',
+    examples: 'PET병, PP/PE 크림단지, 캡, 속마개, 튜브 등',
+  },
+  {
+    id: 'film',
+    label: '필름·시트형 포장재',
+    shortLabel: '필름·시트',
+    materials: ['Film/Sheet (필름/수축비닐)'],
+    exemptionTonnes: 4,
+    color: '#06b6d4',
+    bgColor: '#ecfeff',
+    borderColor: '#a5f3fc',
+    icon: '🎞️',
+    examples: '수축 비닐 래핑, 비닐 봉투 등',
+  },
+  {
+    id: 'glass',
+    label: '유리병',
+    shortLabel: '유리병',
+    materials: ['Glass (유리병)'],
+    exemptionTonnes: 10,
+    color: '#3b82f6',
+    bgColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+    icon: '🍾',
+    examples: '앰플, 에센스, 크림 유리 용기 등',
+  },
+  {
+    id: 'metal',
+    label: '금속캔',
+    shortLabel: '금속캔',
+    materials: ['Aluminium', 'Steel'],
+    exemptionTonnes: 4,
+    color: '#64748b',
+    bgColor: '#f8fafc',
+    borderColor: '#cbd5e1',
+    icon: '🥫',
+    examples: '알루미늄 미스트, 철캔 등',
+  },
+  {
+    id: 'paperpack',
+    label: '종이팩',
+    shortLabel: '종이팩',
+    materials: ['Paper Pack (종이팩)'],
+    exemptionTonnes: 4,
+    color: '#f59e0b',
+    bgColor: '#fffbeb',
+    borderColor: '#fde68a',
+    icon: '🥛',
+    examples: '알루미늄·합성수지 첩합 종이팩 (밀크팩, 멸균팩)',
+  },
+  {
+    id: 'foam',
+    label: '발포합성수지',
+    shortLabel: '발포합성수지',
+    materials: ['Foam (발포합성수지)'],
+    exemptionTonnes: 0.8,
+    color: '#8b5cf6',
+    bgColor: '#f5f3ff',
+    borderColor: '#ddd6fe',
+    icon: '🔲',
+    examples: '스티로폼, PSP 완충재 등',
+  },
+];
+
+// EPR 제외 재질 (중량 합산 안 함)
+export const EPR_EXCLUDED_MATERIALS = ['Paper (단상자/제외)'];
+
+// 편의용: 전체 EPR 대상 재질 목록 (제외 재질 빼고 모두)
 export const GLASS_MATERIALS = ['Glass (유리병)'];
 export const METAL_MATERIALS = ['Aluminium', 'Steel'];
+export const FOAM_MATERIALS = ['Foam (발포합성수지)'];
+export const PAPER_PACK_MATERIALS = ['Paper Pack (종이팩)'];
+export const FILM_MATERIALS = ['Film/Sheet (필름/수축비닐)'];
 
 // ─── 포장 구분 ───
 export const PACKAGING_CATEGORIES = [
@@ -56,38 +138,20 @@ export const MFG_TYPES = [
   { value: '수입', label: '수입' },
 ];
 
-// ─── EPR 면제 조건 ───
+// ─── EPR 면제 조건 (레거시 - EprExemptionPanel에서 EPR_MATERIAL_GROUPS로 대체) ───
 export const EPR_EXEMPTION_CONDITIONS = [
   {
     title: '사업장 매출(수입)액 기준 면제',
-    condition: '제조업자 매출액 10억원 미만\n수입업자 수입액 3억원 미만',
+    condition: '국내 제조업자: 전년도 총매출액 10억원 미만\n수입업자: 전년도 총수입액 3억원 미만',
     result: '모든 포장재 분담금 100% 면제',
     icon: '🏢',
   },
   {
-    title: '합성수지류/필름류 출고량 기준',
-    condition: '연간 출고량 4톤(4,000kg) 미만',
-    result: '해당 재질 분담금 면제',
-    icon: '🧪',
-  },
-  {
-    title: '유리병 출고량 기준',
-    condition: '연간 출고량 10톤(10,000kg) 미만',
-    result: '해당 재질 분담금 면제',
-    icon: '🍾',
-  },
-  {
-    title: '종이팩/금속캔 출고량 기준',
-    condition: '연간 출고량 4톤(4,000kg) 미만',
-    result: '해당 재질 분담금 면제',
-    icon: '🥫',
-  },
-  {
     title: '일반 종이 단상자 / 택배박스',
-    condition: 'EPR 신고 대상 아님',
-    result: '자동 제외 (0g 처리)',
+    condition: 'EPR 신고 대상 포장재 아님',
+    result: '자동 제외 (0g 처리) — 단, 부착된 투명창·수축비닐은 합성수지로 계산',
     icon: '📦',
-  }
+  },
 ];
 
 // ─── 기본 EPR 관련 사이트 ───
