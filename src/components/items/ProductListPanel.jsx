@@ -9,7 +9,7 @@ import React, { useState, useRef } from 'react';
 import { Plus, Upload, Download, Search, AlertCircle, Package, ChevronRight, Layers } from 'lucide-react';
 import usePackagingStore from '../../stores/packagingStore';
 import Modal from '../common/Modal';
-import { BRAND_TYPES, MFG_TYPES } from '../../utils/constants';
+import { BRAND_TYPES, MFG_TYPES, COSMETICS_TYPES } from '../../utils/constants';
 import { parseExcelFile, formatProductsFromExcel, downloadProductTemplateExcel } from '../../utils/excelParser';
 
 // ─── 엑셀 컬럼 안내 데이터 ───
@@ -266,13 +266,15 @@ export default function ProductListPanel() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">화장품유형</label>
-              <input
-                type="text"
+              <select
                 value={formData.cosmeticsType}
                 onChange={e => setFormData({ ...formData, cosmeticsType: e.target.value })}
-                placeholder="기초화장용"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-white"
+              >
+                {COSMETICS_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div>

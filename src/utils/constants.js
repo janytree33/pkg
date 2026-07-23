@@ -126,6 +126,13 @@ export const PACKAGING_CATEGORIES = [
   { value: '2차', label: '2차 포장 (단상자, 라벨 등)' },
 ];
 
+// ─── 화장품 유형 ───
+// 추후 항목 추가 시 이 배열에만 추가하면 모든 드롭다운에 자동 반영됩니다.
+export const COSMETICS_TYPES = [
+  { value: '일반화장품',   label: '일반화장품' },
+  { value: '기능성화장품', label: '기능성화장품' },
+];
+
 // ─── 자사/타사 구분 ───
 export const BRAND_TYPES = [
   { value: '자사', label: '자사 브랜드 (자사 상표)', description: 'EPR 신고 대상' },
