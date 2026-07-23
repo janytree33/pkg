@@ -16,27 +16,22 @@ import EprReporting from './pages/EprReporting';
 import Settings from './pages/Settings';
 import { SIDEBAR_MENUS } from './utils/constants';
 
-// 현재 라우트에 따른 타이틀 매핑 훅
-function usePageTitle() {
-  const location = useLocation();
-  const menu = SIDEBAR_MENUS.find((m) => m.path === location.pathname);
-  return menu ? menu.label : 'JANYTREE PKG Portal';
-}
-
 function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const title = usePageTitle();
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50  transition-theme">
-      {/* 상단 헤더 (전체 너비 차지) */}
-      <Header title={title} />
-      
+    <div
+      className="h-screen w-screen flex flex-col overflow-hidden transition-theme"
+      style={{ background: 'linear-gradient(145deg, #e8fdf5 0%, #f0fdfb 25%, #f7fffe 50%, #fdfff7 75%, #fffef0 100%)' }}
+    >
+      {/* 상단 헤더 */}
+      <Header />
+
       {/* 하단 바디 (좌측 사이드바 + 우측 메인) */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        
-        <main className="flex-1 overflow-y-auto p-8">
+
+        <main className="flex-1 overflow-y-auto p-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/items" element={<ItemManagement />} />

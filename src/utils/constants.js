@@ -22,16 +22,21 @@ export const CONTAINER_TYPE_MAP = [
 // ─── 포장재 재질 목록 ───
 export const MATERIAL_OPTIONS = [
   'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC',
-  'Glass', 'Aluminium', 'Steel', 'Paper',
-  'PP/PE', 'PE/EVA/AL', '기타',
+  'Glass (유리병)', 'Aluminium', 'Steel', 
+  'Paper (단상자/제외)', 'Paper Pack (종이팩)', 
+  'Film/Sheet (필름/수축비닐)', 'PP/PE', 'PE/EVA/AL', '기타',
 ];
 
 // ─── 플라스틱/합성수지 재질 목록 (EPR 중량 합산 대상) ───
 // 유리나 금속은 제외, 플라스틱/합성수지만 EPR 중량에 포함
 export const PLASTIC_MATERIALS = [
   'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC',
-  'PP/PE', 'PE/EVA/AL', '기타',
+  'PP/PE', 'PE/EVA/AL', 'Film/Sheet (필름/수축비닐)'
 ];
+
+// 법령 기준 타겟 그룹
+export const GLASS_MATERIALS = ['Glass (유리병)'];
+export const METAL_MATERIALS = ['Aluminium', 'Steel'];
 
 // ─── 포장 구분 ───
 export const PACKAGING_CATEGORIES = [
@@ -54,17 +59,35 @@ export const MFG_TYPES = [
 // ─── EPR 면제 조건 ───
 export const EPR_EXEMPTION_CONDITIONS = [
   {
-    title: '매출액 기준 면제',
-    condition: '연간 매출액 10억원 미만',
-    result: '분담금 면제 (0원)',
-    icon: '💰',
+    title: '사업장 매출(수입)액 기준 면제',
+    condition: '제조업자 매출액 10억원 미만\n수입업자 수입액 3억원 미만',
+    result: '모든 포장재 분담금 100% 면제',
+    icon: '🏢',
   },
   {
-    title: '출고량 기준 면제',
-    condition: '합성수지 연간 출고량 4톤 미만',
-    result: '분담금 면제 (0원)',
-    icon: '📦',
+    title: '합성수지류/필름류 출고량 기준',
+    condition: '연간 출고량 4톤(4,000kg) 미만',
+    result: '해당 재질 분담금 면제',
+    icon: '🧪',
   },
+  {
+    title: '유리병 출고량 기준',
+    condition: '연간 출고량 10톤(10,000kg) 미만',
+    result: '해당 재질 분담금 면제',
+    icon: '🍾',
+  },
+  {
+    title: '종이팩/금속캔 출고량 기준',
+    condition: '연간 출고량 4톤(4,000kg) 미만',
+    result: '해당 재질 분담금 면제',
+    icon: '🥫',
+  },
+  {
+    title: '일반 종이 단상자 / 택배박스',
+    condition: 'EPR 신고 대상 아님',
+    result: '자동 제외 (0g 처리)',
+    icon: '📦',
+  }
 ];
 
 // ─── 기본 EPR 관련 사이트 ───

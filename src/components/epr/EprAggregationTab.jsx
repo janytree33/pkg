@@ -108,12 +108,13 @@ export default function EprAggregationTab() {
   return (
     <div className="space-y-6">
       {/* 안내 배너 */}
-      <div className="bg-brand-50  border border-blue-200  rounded-lg p-4 flex gap-3">
-        <Info className="w-5 h-5 text-brand-500  shrink-0 mt-0.5" />
+      <div className="bg-brand-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+        <Info className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
         <div>
-          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300">자사 브랜드 제품만 EPR 신고 대상입니다.</h4>
-          <p className="text-sm text-blue-700  mt-1">
-            법적 근거: 자원재활용법 시행령 제18조에 따라, 타사 상표가 부착된 제품(OEM/사입 등)은 상표권자가 직접 신고해야 하므로 본 시스템의 신고 취합 목록에서 자동 제외되었습니다.
+          <h4 className="text-sm font-semibold text-blue-900">자사 브랜드 제품만 EPR 신고 대상입니다.</h4>
+          <p className="text-sm text-blue-700 mt-1">
+            타사 상표 제품(OEM/사입)은 상표권자 직접 신고 대상이므로 자동 제외됩니다.<br/>
+            <strong>💡 참고:</strong> 종이 단상자는 평가 대상이 아니므로 중량 합산(0g)에서 자동 제외되며, 합성수지, 유리병, 필름류 등만 합산됩니다.
           </p>
         </div>
       </div>
@@ -127,8 +128,8 @@ export default function EprAggregationTab() {
           </div>
         </div>
 
-        <div className="bg-white  p-5 rounded-lg border border-gray-200  shadow-sm flex flex-col justify-center">
-          <div className="text-sm font-medium text-gray-500  mb-1">총 플라스틱 배출량</div>
+        <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-center">
+          <div className="text-sm font-medium text-gray-500 mb-1">총 대상 포장재 배출량</div>
           <div className="text-3xl font-bold text-gray-900  flex items-baseline gap-2">
             {stats.totalWeightKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-sm font-normal text-gray-500">kg</span>
           </div>
