@@ -37,14 +37,33 @@ export default function EprAggregationTab() {
       return { groupResults: [], productRows: [] };
     }
 
-    // 재질 그룹별 누적 중량 초기화
-    const groupWeights = {}; // groupId → totalWeightGrams
+    const groupWeights = {};
     EPR_MATERIAL_GROUPS.forEach(g => { groupWeights[g.id] = 0; });
 
     const productRows = [];
 
     currentReport.mappings.forEach(mapping => {
       if (mapping.status !== 'mapped' || !mapping.matchedProductId || mapping.originalQty <= 0) return;
+
+      // ★ 견본품(S)은 EPR 신고에서 제외 (별도 라인 표시만)
+      if (mapping.isSample) {
+        productRows.push({
+          id: mapping.id,
+          code: '--',
+          name: mapping.originalName,
+          mfgType: '견본품',
+          brandType: '자사',
+          annualQty: mapping.originalQty,
+          perUnitGrams: 0,
+          totalGrams: 0,
+          byGroup: {},
+          isSample: true,
+          isRefill: false,
+          isHerbal: mapping.isHerbal || false,
+          excludeReason: '견본품(S) — EPR 신고 제외 적용',
+        });
+        return; // 견본품는 중량 합산 제외
+      }
 
       const product = finishedProducts.find(p => p.id === mapping.matchedProductId);
       if (!product) return;
@@ -53,36 +72,30 @@ export default function EprAggregationTab() {
         ? product.versions[product.versions.length - 1]
         : { bomItems: [] };
 
-      // 제품 1개 기준으로 재질 그룹별 중량 집계
       const perUnitByGroup = {};
       EPR_MATERIAL_GROUPS.forEach(g => { perUnitByGroup[g.id] = 0; });
 
       latestVersion.bomItems.forEach(bomItem => {
-        // BOM 아이템의 componentId로 실제 포장재 정보 조회
         const component = packagingComponents.find(c => c.id === bomItem.componentId);
         if (!component) return;
 
         const material = component.material || '';
         const weightPerUnit = Number(component.weightPerUnit) || 0;
         const qty = Number(bomItem.qty) || 1;
-        const itemWeight = weightPerUnit * qty; // 이 BOM 항목의 총 중량(g)
+        const itemWeight = weightPerUnit * qty;
 
-        // ★ 종이 단상자 등 제외 재질은 건너뜀 (0g 처리)
         if (EPR_EXCLUDED_MATERIALS.includes(material)) return;
 
-        // 어느 그룹에 속하는지 찾기
         const group = EPR_MATERIAL_GROUPS.find(g => g.materials.includes(material));
         if (group) {
           perUnitByGroup[group.id] += itemWeight;
         }
       });
 
-      // 연간 출고량 × 제품 1개당 중량 = 총 배출량
       Object.keys(perUnitByGroup).forEach(groupId => {
         groupWeights[groupId] += perUnitByGroup[groupId] * mapping.originalQty;
       });
 
-      // 제품별 행 데이터 (상세 테이블용)
       const totalPerUnitGrams = Object.values(perUnitByGroup).reduce((a, b) => a + b, 0);
       productRows.push({
         id: mapping.id,
@@ -94,11 +107,14 @@ export default function EprAggregationTab() {
         perUnitGrams: totalPerUnitGrams,
         totalGrams: totalPerUnitGrams * mapping.originalQty,
         byGroup: perUnitByGroup,
-        itemCode: '0450', // 기본값 (추후 용기형태에서 자동 결정 예정)
+        isSample: false,
+        isRefill:  mapping.isRefill  || false,  // ★ 리필 표시
+        isHerbal:  mapping.isHerbal  || false,  // ★ 한방 표시
+        isCustom:  mapping.isCustom  || false,
+        itemCode: '0450',
       });
     });
 
-    // 각 그룹별 면제 여부 판정
     const groupResults = EPR_MATERIAL_GROUPS.map(group => {
       const totalGrams = groupWeights[group.id] || 0;
       const totalKg = totalGrams / 1000;
@@ -143,9 +159,9 @@ export default function EprAggregationTab() {
         <div className="text-sm">
           <p className="font-semibold text-emerald-800 mb-1">재질별 분리 집계 & 면제 자동 판정</p>
           <p className="text-emerald-700 text-xs leading-relaxed">
-            자원재활용법 시행령 별표4 기준으로 재질 그룹별로 연간 배출량을 계산합니다.
-            <br />• <strong>종이 단상자</strong>는 자동 0g 제외됩니다. 단, 단상자에 붙은 <strong>투명 PET 창문 · 수축 비닐 래핑</strong>은 합성수지/필름으로 등록해야 합니다.
-            <br />• <strong>유리병에 붙은 플라스틱 캡·펌프</strong>도 합성수지로 별도 등록 필수입니다.
+            • <strong>종이 단상자</strong>는 자동 0g 제외. 단, 본 단상자의 <strong>PET 창문 · 수축 비닐</strong>은 합성수지로 등록 필요.<br />
+            • <strong>견본품(S)</strong>는 신고량에서 차감되어 집계에서 <strong>자동 제외</strong>됩니다 (아래 표에 별도 표시).<br />
+            • <strong>리필제품(R)</strong>은 신고 대상에 포함되나 별도 표시되어 확인이 용이합니다.
           </p>
         </div>
       </div>
@@ -290,9 +306,20 @@ export default function EprAggregationTab() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {productRows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 text-xs font-mono text-slate-500">{row.code}</td>
-                  <td className="px-4 py-3 text-sm text-slate-800 font-medium">{row.name}</td>
+                <tr key={row.id} className={`hover:bg-slate-50 transition-colors ${
+                  row.isSample ? 'bg-orange-50/60' : row.isRefill ? 'bg-blue-50/40' : ''
+                }`}>
+                  <td className="px-4 py-3 text-xs font-mono text-slate-500">
+                    {row.isSample ? (
+                      <span className="text-orange-400 text-[10px] font-bold">견본품(S)</span>
+                    ) : row.code}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-800 font-medium">
+                    <span>{row.name}</span>
+                    {row.isRefill && <span className="ml-1 text-[10px] bg-blue-100 text-blue-600 px-1 py-0.5 rounded">R리필</span>}
+                    {row.isHerbal && <span className="ml-1 text-[10px] bg-green-100 text-green-600 px-1 py-0.5 rounded">H한방</span>}
+                    {row.isSample && <span className="ml-1 text-[10px] bg-orange-100 text-orange-600 px-1 py-0.5 rounded">EPR 제외</span>}
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">{row.mfgType}</span>
                   </td>
@@ -300,16 +327,19 @@ export default function EprAggregationTab() {
                     {row.annualQty.toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-right text-xs font-mono text-emerald-700">
-                    {(row.byGroup?.plastic || 0).toFixed(4)}
+                    {row.isSample ? <span className="text-orange-300">제외</span> : (row.byGroup?.plastic || 0).toFixed(4)}
                   </td>
                   <td className="px-4 py-3 text-right text-xs font-mono text-cyan-700">
-                    {(row.byGroup?.film || 0).toFixed(4)}
+                    {row.isSample ? '—' : (row.byGroup?.film || 0).toFixed(4)}
                   </td>
                   <td className="px-4 py-3 text-right text-xs font-mono text-blue-700">
-                    {(row.byGroup?.glass || 0).toFixed(4)}
+                    {row.isSample ? '—' : (row.byGroup?.glass || 0).toFixed(4)}
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-bold text-slate-800">
-                    {(row.totalGrams / 1000).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                    {row.isSample
+                      ? <span className="text-orange-400 text-xs">제외</span>
+                      : (row.totalGrams / 1000).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+                    }
                   </td>
                 </tr>
               ))}

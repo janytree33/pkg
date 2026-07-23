@@ -68,6 +68,7 @@ export const formatComponentsFromExcel = (rows, defaultType = '포장부자재')
 
 /**
  * 생산실적보고서 엑셀 데이터를 규격에 맞게 변환
+ * H열(견본품 S), I열(한방제품 H), J열(리필제품 R), K열(맞온형 C1/C2) 자동 파싱
  */
 export const formatProductionReportFromExcel = (rows) => {
   return rows.map(row => ({
@@ -78,6 +79,11 @@ export const formatProductionReportFromExcel = (rows) => {
     unit: row['단위'] || '',
     quantity: Number(row['생산량(개)']) || 0,
     unitPrice: Number(row['생산단가(원)']) || 0,
+    // ★ 특수 제품 플래그 (엑셀 H~K 켕)
+    isSample:  !!(row['견본품(\'S\'표시)'] || row['견본품'] || '').toString().trim(), // S표시 = 견본품
+    isHerbal:  !!(row['한방제품(\'H\'표시)'] || row['한방제품'] || '').toString().trim(), // H표시 = 한방제품
+    isRefill:  !!(row['리필제품(\'R\'표시)'] || row['리필제품'] || '').toString().trim(), // R표시 = 리l필제품
+    isCustom:  !!(row['맞웅형 내용물(혼합용\'C1\',소분용\'C2\')'] || row['맞웅형'] || '').toString().trim(),
   })).filter(item => item.prodReportName); // 제품명이 있는 행만 추출
 };
 
