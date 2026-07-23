@@ -48,8 +48,8 @@ export default function ProductListPanel() {
     spec: '',
     volume: '',
     weight: 0,
-    brandType: BRAND_TYPES[0]?.code || 'OWN',
-    mfgType: MFG_TYPES[0]?.code || 'MFG',
+    brandType: BRAND_TYPES[0]?.value || '자사',  // ✅ .value 사용
+    mfgType: MFG_TYPES[0]?.value || '제조',       // ✅ .value 사용
   });
 
   const filteredProducts = finishedProducts.filter(p => {
@@ -105,7 +105,7 @@ export default function ProductListPanel() {
       createdAt: new Date().toISOString()
     });
     setIsAddModalOpen(false);
-    setFormData({ code: '', name: '', nameEn: '', cosmeticsType: '일반화장품', spec: '', volume: '', weight: 0, brandType: 'OWN', mfgType: 'MFG' });
+    setFormData({ code: '', name: '', nameEn: '', cosmeticsType: '일반화장품', spec: '', volume: '', weight: 0, brandType: '자사', mfgType: '제조' }); // ✅ 값 수정
   };
 
   return (
@@ -168,9 +168,9 @@ export default function ProductListPanel() {
           </button>
           {BRAND_TYPES.map(type => (
             <button
-              key={type.code}
-              onClick={() => setBrandFilter(type.code)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${brandFilter === type.code ? 'bg-emerald-500 text-white border-emerald-500' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+              key={type.value}
+              onClick={() => setBrandFilter(type.value)}
+              className={`px-3 py-1 text-xs rounded-full border transition-colors ${brandFilter === type.value ? 'bg-emerald-500 text-white border-emerald-500' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}`}
             >
               {type.label}
             </button>
@@ -182,7 +182,8 @@ export default function ProductListPanel() {
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
         {filteredProducts.map(product => {
           const isSelected = selectedProductId === product.id;
-          const isOwnBrand = product.brandType === 'OWN';
+          // ✅ '자사' 또는 'OWN' 둘 다 자사로 인식 (기존 데이터 호환)
+          const isOwnBrand = product.brandType === '자사' || product.brandType === 'OWN';
           const latestVersion = product.versions?.[product.versions.length - 1]?.version || 'v1.0';
           const bomCount = product.versions?.[product.versions.length - 1]?.bomItems?.length || 0;
 
@@ -209,7 +210,8 @@ export default function ProductListPanel() {
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                     isOwnBrand ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                   }`}>
-                    {BRAND_TYPES.find(t => t.code === product.brandType)?.label || '타사'}
+                    {/* ✅ .value로 찾되, 'OWN'→자사 레거시 호환 */}
+                    {BRAND_TYPES.find(t => t.value === product.brandType)?.label || (isOwnBrand ? '자사' : '타사')}
                   </span>
                 </div>
               </div>
@@ -307,18 +309,18 @@ export default function ProductListPanel() {
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">자사/타사</label>
               <select value={formData.brandType} onChange={e => setFormData({ ...formData, brandType: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                {BRAND_TYPES.map(t => <option key={t.code} value={t.code}>{t.label}</option>)}
+                {BRAND_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">제조/수입</label>
               <select value={formData.mfgType} onChange={e => setFormData({ ...formData, mfgType: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                {MFG_TYPES.map(t => <option key={t.code} value={t.code}>{t.label}</option>)}
+                {MFG_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
           </div>
 
-          {formData.brandType !== 'OWN' && (
+          {formData.brandType === '타사' && (
             <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs">
               <AlertCircle size={14} /> 타사 브랜드 제품은 EPR 신고 대상에서 자동 제외됩니다.
             </div>
