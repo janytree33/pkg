@@ -53,10 +53,10 @@ export default function EprExemptionPanel() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">재질 구분</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600">면제 기준</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">화장품 적용 예시</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">앱 내 재질 선택값</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 whitespace-nowrap w-[25%]">재질 구분</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 whitespace-nowrap w-[15%]">면제 기준</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 w-[30%]">화장품 적용 예시</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 w-[30%]">앱 내 재질 선택값</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -68,14 +68,14 @@ export default function EprExemptionPanel() {
                       <span className="font-semibold text-slate-800 text-sm">{group.label}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-3 text-center whitespace-nowrap">
                     <div
-                      className="inline-block px-3 py-1 rounded-full text-xs font-bold"
+                      className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
                       style={{ backgroundColor: group.bgColor, color: group.color, border: `1px solid ${group.borderColor}` }}
                     >
                       {group.exemptionTonnes}톤 미만
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{(group.exemptionTonnes * 1000).toLocaleString()}kg 미만</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">{(group.exemptionTonnes * 1000).toLocaleString()}kg 미만</div>
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-600">{group.examples}</td>
                   <td className="px-4 py-3">
