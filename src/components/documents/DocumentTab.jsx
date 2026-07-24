@@ -110,7 +110,7 @@ const DocumentTab = ({ product }) => {
             >
               {product.versions?.map((ver, idx) => (
                 <option key={idx} value={idx}>
-                  버전 {ver.version} ({ver.components?.length || 0}개 부품)
+                  버전 {ver.version} ({ver.bomItems?.length || 0}개 부품)
                 </option>
               ))}
             </select>

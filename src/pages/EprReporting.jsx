@@ -27,7 +27,7 @@ export default function EprReporting() {
   };
 
   return (
-    <div className="p-6 space-y-6 h-full flex flex-col bg-slate-50  overflow-hidden">
+    <div className="p-6 space-y-6 min-h-screen flex flex-col bg-slate-50">
       <PageBanner 
         title="EPR 실적신고 관리" 
         description="한국환경공단 제출용 실적 데이터를 집계하고 엑셀로 자동 변환합니다."
@@ -66,7 +66,7 @@ export default function EprReporting() {
       {/* 탭 콘텐츠 영역 */}
       <div className="mt-6">
         {activeTab === 'upload' && <ExcelUpload onNextStep={handleNextStep} />}
-        {activeTab === 'mapping' && <ProductMappingTable />}
+        {activeTab === 'mapping' && <ProductMappingTable onNextStep={handleNextStep} />}
         {activeTab === 'aggregation' && <EprAggregationTab />}
       </div>
     </div>

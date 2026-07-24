@@ -17,9 +17,9 @@ const DocumentManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // 제품명 또는 제품코드에 검색어가 포함된 제품만 필터링하여 목록에 보여줍니다.
-  const filteredProducts = finishedProducts.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = (finishedProducts || []).filter(p => 
+    p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p?.code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 현재 선택된 완제품 데이터를 스토어에서 가져옵니다.

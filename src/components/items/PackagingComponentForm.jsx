@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../common/Modal';
 import { CONTAINER_TYPE_MAP, MATERIAL_OPTIONS, PACKAGING_CATEGORIES } from '../../utils/constants';
-import { Upload } from 'lucide-react';
+import { Upload, Download } from 'lucide-react';
 import usePackagingStore from '../../stores/packagingStore';
-import { parseExcelFile, formatComponentsFromExcel } from '../../utils/excelParser';
+import { parseExcelFile, formatComponentsFromExcel, downloadComponentTemplateExcel } from '../../utils/excelParser';
 
 export default function PackagingComponentForm({ isOpen, onClose, onSave, editData }) {
   const { uploadComponentsFromExcel } = usePackagingStore();
@@ -18,15 +18,29 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     category: PACKAGING_CATEGORIES[0]?.value || '',
     type: '포장부자재', // 충진부자재, 포장부자재 구분
     containerType: '',
-    material: '',
-    weightPerUnit: '',
-    remark: '',
-    specFile: null // 사양서 파일 저장을 위한 상태
+    specFiles: [],          // 새로 추가된 다중 파일 배열 (File 객체)
+    existingSpecFiles: []   // 기존에 업로드되었던 파일 배열 ({name, data})
   });
+  const [isSaving, setIsSaving] = useState(false);
 
-  // 수정 모드일 경우 기존 데이터로 폼을 채우고, 등록일 경우 빈 폼으로 초기화합니다.
   useEffect(() => {
     if (editData) {
+      let parsedFiles = [];
+      try {
+        if (editData.specFiles && typeof editData.specFiles === 'string') {
+          parsedFiles = JSON.parse(editData.specFiles);
+        } else if (Array.isArray(editData.specFiles)) {
+          parsedFiles = editData.specFiles;
+        } else if (editData.specFile) {
+          // 과거 단일 파일 문자열 호환성
+          if (editData.specFile.startsWith('[')) {
+            parsedFiles = JSON.parse(editData.specFile);
+          }
+        }
+      } catch(e) {
+        // 무시 (일반 문자열일 경우)
+      }
+
       setFormData({
         regNo: editData.regNo || '',
         code: editData.code || '',
@@ -38,7 +52,8 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         material: editData.material || '',
         weightPerUnit: editData.weightPerUnit || '',
         remark: editData.remark || '',
-        specFile: null 
+        specFiles: [],
+        existingSpecFiles: parsedFiles
       });
     } else {
       setFormData({
@@ -52,60 +67,47 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         material: '',
         weightPerUnit: '',
         remark: '',
-        specFile: null
+        specFiles: [],
+        existingSpecFiles: []
       });
     }
   }, [editData, isOpen]);
 
-  // 엑셀 일괄 업로드
-  const handleExcelUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-      const rawData = await parseExcelFile(file);
-      const formattedData = formatComponentsFromExcel(rawData);
-      
-      if (formattedData.length > 0) {
-        const success = await uploadComponentsFromExcel(formattedData);
-        if (success) {
-          alert(`총 ${formattedData.length}건의 부재료가 성공적으로 업로드되었습니다.`);
-          onClose();
-        } else {
-          alert('엑셀 업로드 중 오류가 발생했습니다.');
-        }
-      } else {
-        alert('업로드할 데이터가 없거나 양식이 잘못되었습니다.');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('엑셀 파일 파싱 중 오류가 발생했습니다.');
-    } finally {
-      e.target.value = null; // 초기화
-    }
-  };
-
   // 저장 버튼 클릭 시 호출 (파일 있으면 Base64로 변환)
   const handleSave = async () => {
-    let specFileData = editData?.specFileData || null;
-    let specFileName = editData?.specFileName || null;
+    if (isSaving) return;
+    setIsSaving(true);
 
-    if (formData.specFile) {
-      // 파일을 Base64 문자열로 변환 (브라우저에서 읽기)
-      specFileData = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result); // "data:application/pdf;base64,..."
-        reader.readAsDataURL(formData.specFile);
+    try {
+      // 1. 새 파일들을 Base64로 변환
+      const newFilesEncoded = await Promise.all(
+        formData.specFiles.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve({
+              name: file.name,
+              size: file.size,
+              data: e.target.result // Base64
+            });
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
+      // 2. 기존 파일과 새 파일을 합침
+      const combinedFiles = [...formData.existingSpecFiles, ...newFilesEncoded];
+
+      // 부모 컴포넌트의 저장 로직 호출을 기다림
+      await onSave({
+        ...formData,
+        weightPerUnit: parseFloat(formData.weightPerUnit) || 0,
+        specFiles: combinedFiles, // DB 저장을 위해 넘김
       });
-      specFileName = formData.specFile.name;
+    } catch (error) {
+      console.error("저장 중 에러 발생:", error);
+    } finally {
+      setIsSaving(false);
     }
-
-    onSave({
-      ...formData,
-      weightPerUnit: parseFloat(formData.weightPerUnit) || 0,
-      specFileData,   // Base64 데이터
-      specFileName,   // 파일명 (표시용)
-    });
   };
 
   // 객체 맵핑을 배열로 변환하여 드롭다운에서 사용하기 쉽게 만듭니다. (이제 상수가 이미 배열임)
@@ -113,29 +115,6 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editData ? '포장재 수정' : '새 포장재 등록'} size="lg">
-      {!editData && (
-        <div className="mb-6 p-4 bg-emerald-50  border border-emerald-200  rounded-lg flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">엑셀 일괄 업로드</h4>
-            <p className="text-xs text-emerald-600  mt-1">대량의 부재료를 한 번에 등록하시려면 엑셀 파일을 업로드하세요.</p>
-          </div>
-          <div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleExcelUpload} 
-              accept=".xlsx, .xls" 
-              className="hidden" 
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-medium"
-            >
-              <Upload size={16} /> 엑셀 업로드
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -249,61 +228,97 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            📎 성적서 / 사양서 파일 <span className="text-xs text-slate-400 font-normal">(PDF, 이미지 · 최대 5MB)</span>
+            📎 성적서 / 사양서 파일 <span className="text-xs text-slate-400 font-normal">(PDF, 이미지 다중 첨부가능 · 최대 5MB)</span>
           </label>
 
-          {/* 기존 첨부 파일 표시 */}
-          {editData?.specFileName && !formData.specFile && (
-            <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-              <span>📄</span>
-              <span className="font-medium">{editData.specFileName}</span>
-              <span className="text-blue-400">(기존 첨부파일)</span>
-            </div>
-          )}
-
-          {/* 파일 선택 영역 */}
-          <div
-            className="border-2 border-dashed border-slate-200 rounded-lg px-4 py-3 hover:border-emerald-300 transition-colors cursor-pointer bg-slate-50"
-            onClick={() => document.getElementById('specFileInput').click()}
-          >
-            {formData.specFile ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-emerald-700">
-                  <span>✅</span>
-                  <span className="font-medium">{formData.specFile.name}</span>
-                  <span className="text-slate-400">({(formData.specFile.size / 1024).toFixed(0)}KB)</span>
+          <div className="space-y-2 mb-3">
+            {/* 기존 첨부 파일 표시 */}
+            {formData.existingSpecFiles.map((file, idx) => (
+              <div key={`existing-${idx}`} className="flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                <div className="flex items-center gap-2">
+                  <span>📄</span>
+                  <a
+                    href={file.data || '#'}
+                    download={file.name}
+                    className="font-medium truncate max-w-[200px] hover:underline cursor-pointer"
+                    title={`${file.name} 다운로드`}
+                  >
+                    {file.name}
+                  </a>
+                  <span className="text-blue-400">(기존 파일)</span>
                 </div>
                 <button
                   type="button"
-                  onClick={e => { e.stopPropagation(); setFormData({...formData, specFile: null}); }}
-                  className="text-slate-400 hover:text-red-500 text-xs"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      existingSpecFiles: prev.existingSpecFiles.filter((_, i) => i !== idx)
+                    }));
+                  }}
+                  className="text-blue-400 hover:text-red-500 text-xs font-bold px-1"
                 >
-                  ✕ 제거
+                  ✕
                 </button>
               </div>
-            ) : (
-              <div className="text-center text-slate-400 text-xs py-1">
-                <div className="text-lg mb-0.5">📂</div>
-                클릭하여 파일 선택 (PDF, PNG, JPG)
+            ))}
+
+            {/* 신규 첨부 파일 표시 */}
+            {formData.specFiles.map((file, idx) => (
+              <div key={`new-${idx}`} className="flex items-center justify-between px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700">
+                <div className="flex items-center gap-2">
+                  <span>✅</span>
+                  <span className="font-medium truncate max-w-[200px]">{file.name}</span>
+                  <span className="text-emerald-400">({(file.size / 1024).toFixed(0)}KB)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      specFiles: prev.specFiles.filter((_, i) => i !== idx)
+                    }));
+                  }}
+                  className="text-emerald-400 hover:text-red-500 text-xs font-bold px-1"
+                >
+                  ✕
+                </button>
               </div>
-            )}
+            ))}
+          </div>
+
+          {/* 파일 선택 영역 */}
+          <div
+            className="border-2 border-dashed border-slate-200 rounded-lg px-4 py-3 hover:border-emerald-300 transition-colors cursor-pointer bg-slate-50 flex items-center justify-center"
+            onClick={() => document.getElementById('specFileInput').click()}
+          >
+            <div className="text-center text-slate-400 text-xs py-1">
+              <div className="text-lg mb-0.5">📂</div>
+              <span className="text-emerald-600 font-medium">클릭</span>하여 추가할 파일을 선택하세요 (여러 개 선택 가능)
+            </div>
           </div>
 
           <input
             id="specFileInput"
             type="file"
+            multiple
             accept=".pdf,.png,.jpg,.jpeg,.webp"
             className="hidden"
             onChange={e => {
-              const file = e.target.files[0];
-              if (!file) return;
-              // 5MB 용량 제한 체크
-              if (file.size > 5 * 1024 * 1024) {
-                alert(`파일 크기가 너무 큽니다.\n최대 5MB까지 첨부 가능합니다.\n현재 파일: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
-                e.target.value = null;
-                return;
+              const files = Array.from(e.target.files);
+              if (files.length === 0) return;
+              
+              // 용량 초과 파일 거르기
+              const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024);
+              if (validFiles.length < files.length) {
+                alert(`5MB를 초과하는 파일이 제외되었습니다.`);
               }
-              setFormData({...formData, specFile: file});
+              
+              setFormData(prev => ({
+                ...prev,
+                specFiles: [...prev.specFiles, ...validFiles]
+              }));
+              // 같은 파일을 다시 선택할 수 있도록 input 초기화
+              e.target.value = null;
             }}
           />
         </div>
@@ -312,15 +327,21 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button 
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700  bg-white  border border-gray-300  rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            disabled={isSaving}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             취소
           </button>
           <button 
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-brand-400 text-white font-bold tracking-wide shadow-sm hover:shadow-md rounded-md hover:bg-brand-500"
+            disabled={isSaving}
+            className={`px-4 py-2 text-sm font-medium text-white rounded-md tracking-wide shadow-sm transition-all ${
+              isSaving 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-brand-400 hover:bg-brand-500 hover:shadow-md'
+            }`}
           >
-            저장
+            {isSaving ? '저장 중...' : '저장'}
           </button>
         </div>
       </div>

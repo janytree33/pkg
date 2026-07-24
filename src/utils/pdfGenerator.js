@@ -7,12 +7,12 @@ import html2pdf from 'html2pdf.js';
  * @param {string} filename - 다운로드될 PDF 파일의 이름 (기본값: 'packaging-specification.pdf')
  */
 export const generatePdf = async (element, filename = 'packaging-specification.pdf') => {
-  // pdf 생성 옵션 설정 (A4 기준 여백 15mm)
+  // pdf 생성 옵션 설정 (내부 컴포넌트에서 이미 padding을 주었으므로 여백은 0으로 설정)
   const opt = {
-    margin:       15,
+    margin:       0,
     filename:     filename,
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 }, // 화질을 높이기 위해 scale을 2로 설정합니다.
+    html2canvas:  { scale: 2, useCORS: true }, 
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
@@ -50,11 +50,12 @@ export const printDocument = (element) => {
     printWindow.document.close();
     printWindow.focus();
     
-    // 내용이 완전히 렌더링될 수 있도록 아주 짧은 지연시간 후 인쇄 대화상자를 엽니다.
+    // 이미지 렌더링이 완전히 끝날 수 있도록 넉넉한 지연시간(700ms) 후 인쇄 대화상자를 엽니다.
     setTimeout(() => {
       printWindow.print();
-      printWindow.close(); // 인쇄 완료 후 창 닫기
-    }, 250);
+      // 크롬/엣지 인쇄 버그(저장 중 무한대기) 방지를 위해 프로그래밍 강제 닫기를 수행하지 않습니다.
+      // 인쇄 완료 후 팝업 창은 사용자가 수동으로 닫거나 창 뒤편에 남겨둡니다.
+    }, 700);
   } else {
     // 팝업 차단이 설정된 경우 알림을 표시합니다.
     alert("팝업 차단이 설정되어 있습니다. 인쇄를 위해 팝업 차단을 해제해 주세요.");

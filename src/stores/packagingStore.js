@@ -5,12 +5,10 @@
  * 포장재 코드, 완제품 코드, BOM(부품표) 데이터를 관리합니다
  */
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { generateId } from '../utils/constants';
 import { supabase } from '../lib/supabase';
 
 const usePackagingStore = create(
-  persist(
     (set, get) => ({
       // ─── 포장재 목록 ───
       packagingComponents: [],
@@ -40,6 +38,7 @@ const usePackagingStore = create(
               material: c.material,
               weight: c.weight_g,
               weightPerUnit: c.weight_g, // EPR 집계에서 관리하는 필드명
+              containerType: c.container_type,
               supplier: c.supplier,
               specFile: c.supplier_spec_doc,
               specFileData: c.spec_file_data || null,     // ★ Base64 데이터
@@ -120,14 +119,18 @@ const usePackagingStore = create(
           spec: component.spec || '',
           type: component.type,
           material: component.material,
+          container_type: component.containerType || '',
           weight_g: component.weight || component.weightPerUnit || 0,
           supplier: component.supplier || '',
-          supplier_spec_doc: component.specFile || '',
-          spec_file_data: component.specFileData || null,   // ★ Base64 데이터
-          spec_file_name: component.specFileName || null,   // ★ 파일명
-          notes: component.description || ''
+          supplier_spec_doc: component.specFiles ? JSON.stringify(component.specFiles) : (component.specFile || ''),
+          notes: component.remark || component.description || ''
         };
-        const { data } = await supabase.from('packaging_components').insert([payload]).select().single();
+        const { data, error } = await supabase.from('packaging_components').insert([payload]).select().single();
+        if (error) {
+          console.error("Supabase insert error:", error, "Payload:", payload);
+          alert("데이터베이스 저장 오류: " + error.message);
+          return null;
+        }
         if (data) {
           const newComponent = {
             id: data.id,
@@ -151,19 +154,28 @@ const usePackagingStore = create(
           ),
         }));
         
-        await supabase.from('packaging_components').update({
+        const { error } = await supabase.from('packaging_components').update({
           reg_no: updates.regNo,
           code: updates.code,
           name: updates.name,
           spec: updates.spec,
           type: updates.type,
           material: updates.material,
-          weight_g: updates.weight,
+          container_type: updates.containerType,
+          weight_g: updates.weightPerUnit || updates.weight,
           supplier: updates.supplier,
-          supplier_spec_doc: updates.specFile,
-          notes: updates.description,
+          supplier_spec_doc: updates.specFiles ? JSON.stringify(updates.specFiles) : (updates.specFile || ''),
+          notes: updates.remark || updates.description,
           updated_at: new Date().toISOString()
         }).eq('id', id);
+
+        if (error) {
+          console.error("Supabase update error:", error);
+          // 실패 시 원래 상태로 롤백은 복잡하므로 새로고침을 권장
+          alert("수정 중 데이터베이스 오류가 발생했습니다: " + error.message);
+          return false;
+        }
+        return true;
       },
 
       // ─── 포장재 삭제 (Supabase 동기화) ───
@@ -276,7 +288,8 @@ const usePackagingStore = create(
           spec: c.spec || '',
           type: c.type || '포장부자재',
           material: c.material || '',
-          weight_g: c.weight || 0,
+          weight_g: c.weightPerUnit || c.weight || 0,
+          notes: c.remark || '',
         }));
 
         const { data, error } = await supabase.from('packaging_components').insert(payload).select();
@@ -307,8 +320,8 @@ const usePackagingStore = create(
         if (!p) return;
         const versionId = p.versions[versionIndex].id;
         
-        // component_id는 원본 packaging_components의 id를 가리킴 (이전에 선택된 아이템의 id를 component_id로 사용)
-        const componentId = bomItem.id; 
+        // component_id는 원본 packaging_components의 id를 가리킴
+        const componentId = bomItem.componentId || bomItem.id; 
         
         const { data } = await supabase.from('bom_items').insert([{
           version_id: versionId,
@@ -335,6 +348,7 @@ const usePackagingStore = create(
 
       // ─── BOM에서 포장재 제거 (Supabase 동기화) ───
       removeBomItem: async (productId, versionIndex, bomItemId) => {
+        // 프론트엔드 상태 먼저 업데이트 (Optimistic)
         set((state) => ({
           finishedProducts: state.finishedProducts.map((p) => {
             if (p.id !== productId) return p;
@@ -345,7 +359,11 @@ const usePackagingStore = create(
             return { ...p, versions: newVersions };
           }),
         }));
-        await supabase.from('bom_items').delete().eq('id', bomItemId);
+        const { error } = await supabase.from('bom_items').delete().eq('id', bomItemId);
+        if (error) {
+          console.error("Supabase delete error:", error);
+          alert("삭제 중 오류가 발생했습니다. 새로고침 후 다시 시도해주세요. (" + error.message + ")");
+        }
       },
 
       // ─── BOM 포장재 수량 수정 (Supabase 동기화) ───
@@ -413,16 +431,37 @@ const usePackagingStore = create(
         }
       },
 
+      // ─── 버전 삭제 (Supabase 동기화) ───
+      deleteProductVersion: async (productId, versionId) => {
+        // 프론트엔드 상태에서 먼저 제거 (Optimistic)
+        set((state) => ({
+          finishedProducts: state.finishedProducts.map((prod) => {
+            if (prod.id !== productId) return prod;
+            return {
+              ...prod,
+              versions: prod.versions.filter(v => v.id !== versionId)
+            };
+          }),
+        }));
+        
+        // 데이터베이스에서 버전 삭제 (bom_items는 외래키 제약조건(CASCADE)에 의해 자동 삭제될 것으로 기대, 만약 아니라면 여기서 명시적으로 지우지 않으면 오류가 날 수 있음. 하지만 안전하게 버전을 지움)
+        const { error } = await supabase.from('product_versions').delete().eq('id', versionId);
+        if (error) {
+          console.error("Supabase version delete error:", error);
+          alert("버전 삭제 중 오류가 발생했습니다: " + error.message);
+        }
+      },
+
       // ─── 선택된 완제품 정보 가져오기 ───
       getSelectedProduct: () => {
         const { finishedProducts, selectedProductId } = get();
         return finishedProducts.find((p) => p.id === selectedProductId) || null;
       },
     }),
-    {
-      name: 'janytree-packaging-store',
-    }
-  )
+    // {
+    //   name: 'janytree-packaging-store',
+    // }
+  // )
 );
 
 export default usePackagingStore;

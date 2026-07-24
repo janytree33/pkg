@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Trash2, Edit } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import useEprStore from '../../stores/eprStore';
 import { formatProductionReportFromExcel } from '../../utils/excelParser';
@@ -18,6 +18,8 @@ export default function ExcelUpload({ onNextStep }) {
   const [error, setError] = useState('');
 
   const addProductionReport = useEprStore(state => state.addProductionReport);
+  const reports = useEprStore(state => state.productionReports);
+  const deleteProductionReport = useEprStore(state => state.deleteProductionReport);
 
   // 엑셀 파싱 및 데이터 읽기
   const processExcelFile = (file) => {
@@ -41,8 +43,8 @@ export default function ExcelUpload({ onNextStep }) {
         }
 
         setFileInfo({ name: file.name, size: file.size, rows: jsonData.length, data: jsonData });
-        // 미리보기를 위해 처음 10행만 저장
-        setPreviewData(jsonData.slice(0, 10));
+        // 데이터 전체 렌더링
+        setPreviewData(jsonData);
       } catch (err) {
         console.error(err);
         setError('엑셀 파일을 읽는 중 오류가 발생했습니다. 파일 형식을 확인해주세요.');
@@ -85,10 +87,12 @@ export default function ExcelUpload({ onNextStep }) {
     if (fileInfo && fileInfo.data) {
       // 스토어에 데이터 저장
       const report = {
+        id: Date.now().toString(),
         fileName: fileInfo.name,
         year: year,
         totalRows: fileInfo.rows,
-        data: fileInfo.data
+        data: fileInfo.data,
+        uploadDate: new Date().toISOString()
       };
       
       addProductionReport(report);
@@ -108,7 +112,8 @@ export default function ExcelUpload({ onNextStep }) {
       </div>
 
       {!fileInfo ? (
-        // 드래그 앤 드롭 영역
+        <>
+        {/* 드래그 앤 드롭 영역 */}
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer
             ${isDragging 
@@ -143,6 +148,61 @@ export default function ExcelUpload({ onNextStep }) {
             </div>
           )}
         </div>
+
+        {/* 최근 업로드 내역 (보관함) */}
+        {reports.length > 0 && (
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+              📂 내 실적신고 임시 보관함 <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{reports.length}건</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reports.map((report, idx) => (
+                <div key={report.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-bold px-2 py-1 bg-brand-50 text-brand-700 rounded-md">
+                        {report.year}년 귀속
+                      </span>
+                      <button 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          e.stopPropagation(); 
+                          deleteProductionReport(report.id); 
+                        }}
+                        className="text-slate-400 hover:text-red-500 p-1.5 rounded-md hover:bg-red-50 transition-colors bg-white border border-slate-200 shadow-sm"
+                        title="즉시 삭제하기"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <h4 className="font-semibold text-gray-800 truncate mb-1" title={report.fileName}>{report.fileName}</h4>
+                    <p className="text-xs text-gray-500 mb-2">
+                      데이터: {report.totalRows}건
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(report.uploadDate).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    {idx === reports.length - 1 ? (
+                      <button 
+                        onClick={() => onNextStep && onNextStep()}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-sm font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors"
+                      >
+                        <Edit size={14} /> 이어서 매핑하기
+                      </button>
+                    ) : (
+                      <p className="text-xs text-center text-amber-600 bg-amber-50 py-1.5 rounded-lg">
+                        과거 내역입니다. (최신 건만 작업 가능)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        </>
       ) : (
         // 업로드 성공 및 데이터 미리보기 영역
         <div className="space-y-6">
@@ -181,7 +241,7 @@ export default function ExcelUpload({ onNextStep }) {
 
           <div className="border border-gray-200  rounded-lg overflow-hidden">
             <div className="bg-gray-50  px-4 py-2 border-b border-gray-200  flex justify-between items-center">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">데이터 미리보기 (전체 중 처음 10개만 화면에 표시됩니다)</h4>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">데이터 미리보기 (전체 데이터가 화면에 표시됩니다)</h4>
               <button 
                 onClick={() => { setFileInfo(null); setPreviewData([]); }}
                 className="text-xs text-brand-500  hover:underline"
@@ -189,7 +249,7 @@ export default function ExcelUpload({ onNextStep }) {
                 다른 파일 선택
               </button>
             </div>
-            <div className="overflow-x-auto max-h-80">
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50  sticky top-0">
                   <tr>

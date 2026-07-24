@@ -54,7 +54,7 @@ const FLAG_BADGES = [
   },
 ];
 
-export default function ProductMappingTable() {
+export default function ProductMappingTable({ onNextStep }) {
   const reports = useEprStore(state => state.productionReports);
   const updateProductionReport = useEprStore(state => state.updateProductionReport);
   const finishedProducts = usePackagingStore(state => state.finishedProducts);
@@ -190,8 +190,10 @@ export default function ProductMappingTable() {
   // 5. 필터링
   const filteredMappings = useMemo(() => {
     return mappings.filter(m => {
-      if (searchTerm && !m.originalName.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      if (showOnlyOwnBrand && m.status === 'excluded') return false;
+      if (searchTerm && !String(m.originalName || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      // 자사만 필터가 켜져 있으면, '매핑 완료(자사대상)' 상태가 아닌 모든 항목(미매핑, 제외)을 숨김
+      if (showOnlyOwnBrand && m.status !== 'mapped') return false;
+      
       if (flagFilter === 'sample' && !m.isSample) return false;
       if (flagFilter === 'refill' && !m.isRefill) return false;
       if (flagFilter === 'herbal' && !m.isHerbal) return false;
@@ -215,15 +217,16 @@ export default function ProductMappingTable() {
     custom:  mappings.filter(m => m.isCustom).length,
   }), [mappings]);
 
-  // 8. 스토어 저장
+  // 8. 스토어 자동 저장 (무한루프 방지를 위해 currentReport 대신 id만 의존성에 추가)
+  const currentReportId = currentReport?.id;
   useEffect(() => {
-    if (currentReport && mappings.length > 0) {
-      updateProductionReport(currentReport.id, {
+    if (currentReportId && mappings.length > 0) {
+      updateProductionReport(currentReportId, {
         mappings,
         mappingStatus: progress === 100 ? 'complete' : 'partial',
       });
     }
-  }, [mappings, progress, currentReport, updateProductionReport]);
+  }, [mappings, progress, currentReportId, updateProductionReport]);
 
   if (!currentReport) {
     return (
@@ -571,6 +574,17 @@ export default function ProductMappingTable() {
           </div>
         </div>
       )}
+
+      {/* ─── 하단 다음 단계 버튼 ─── */}
+      <div className="p-6 border-t border-slate-100 flex justify-end bg-slate-50 rounded-b-xl mt-4">
+        <button
+          onClick={() => onNextStep && onNextStep()}
+          className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+          style={{ background: 'linear-gradient(90deg, #10b981, #0ea5e9)' }}
+        >
+          저장 및 다음 단계로 (EPR 신고 취합) <ArrowRight size={18} />
+        </button>
+      </div>
     </div>
   );
 }

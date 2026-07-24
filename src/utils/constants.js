@@ -13,6 +13,7 @@ export const CONTAINER_TYPE_MAP = [
   { label: '플라스틱병(PET-유색)', code: '0411', desc: '유색 PET 병' },
   { label: '플라스틱병(PET-복합)', code: '0412', desc: 'PET 복합재질' },
   { label: '플라스틱 용기/단지(PE/PP/ABS 단일)', code: '0450', desc: '크림 단지, 단일재질 용기' },
+  { label: '마개/캡/부속품(플라스틱)', code: '0450', desc: '캡, 펌프 등 플라스틱 부속품' },
   { label: '튜브/필름(복합재질)', code: '0460', desc: '복합재질 튜브, 알루미늄 튜브' },
   { label: '유리병(뚜껑일체형)', code: '0210', desc: '앰플, 에센스 유리' },
   { label: '유리병(뚜껑분리형)', code: '0220', desc: '뚜껑 분리 유리' },
@@ -21,7 +22,7 @@ export const CONTAINER_TYPE_MAP = [
 
 // ─── 포장재 재질 목록 ───
 export const MATERIAL_OPTIONS = [
-  'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC',
+  'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC',
   'Glass (유리병)', 'Aluminium', 'Steel',
   'Paper (단상자/제외)', 'Paper Pack (종이팩)',
   'Film/Sheet (필름/수축비닐)', 'Foam (발포합성수지)',
@@ -30,7 +31,7 @@ export const MATERIAL_OPTIONS = [
 
 // ─── 플라스틱/합성수지 재질 목록 (EPR 중량 합산 대상) ───
 export const PLASTIC_MATERIALS = [
-  'PET', 'PP', 'PE', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL',
+  'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL',
 ];
 
 // ─── EPR 법령 기준: 재질 그룹별 면제 기준 ───
@@ -40,7 +41,7 @@ export const EPR_MATERIAL_GROUPS = [
     id: 'plastic',
     label: '합성수지류 (플라스틱)',
     shortLabel: '합성수지',
-    materials: ['PET', 'PP', 'PE', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL'],
+    materials: ['PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL'],
     exemptionTonnes: 4,
     color: '#10b981',
     bgColor: '#f0fdf4',

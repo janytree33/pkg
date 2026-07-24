@@ -49,7 +49,7 @@ export default function ProductInfoTab() {
     }
   };
 
-  const isEprTarget = formData.brandType === 'OWN';
+  const isEprTarget = formData.brandType === '자사';
 
   return (
     <div className="max-w-3xl space-y-6">

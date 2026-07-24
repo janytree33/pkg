@@ -71,11 +71,16 @@ const useEprStore = create(
         const results = [];
 
         parsedRows.forEach(row => {
-          // 완제품 중 prod_report_name이 일치하는 항목 찾기 (공백 제거 후 비교)
-          const match = finishedProducts.find(p => 
-            p.prodReportName && 
-            p.prodReportName.trim() === row.prodReportName.trim()
-          );
+          const rowName = String(row.prodReportName || '').trim();
+          // 완제품 중 실적보고제품명 또는 일반제품명이 일치하는 항목 찾기 (공백 제거 후 비교)
+          const match = finishedProducts.find(p => {
+            if (!p) return false;
+            const targetProdReportName = String(p.prodReportName || '').trim();
+            const targetName = String(p.name || '').trim();
+            
+            return (targetProdReportName && targetProdReportName === rowName) ||
+                   (targetName && targetName === rowName);
+          });
           
           if (match) {
             matchedCount++;
