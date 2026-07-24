@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckCircle2, AlertCircle, Ban, Filter, Search, FlaskConical, RefreshCw, Leaf, Settings2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Ban, Filter, Search, FlaskConical, RefreshCw, Leaf, Settings2, PlusCircle, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useEprStore from '../../stores/eprStore';
 import usePackagingStore from '../../stores/packagingStore';
+import { BRAND_TYPES, MFG_TYPES, COSMETICS_TYPES } from '../../utils/constants';
 
 /**
  * ProductMappingTable.jsx (개선버전)
@@ -56,6 +58,9 @@ export default function ProductMappingTable() {
   const reports = useEprStore(state => state.productionReports);
   const updateProductionReport = useEprStore(state => state.updateProductionReport);
   const finishedProducts = usePackagingStore(state => state.finishedProducts);
+  const addFinishedProduct = usePackagingStore(state => state.addFinishedProduct);
+  const setSelectedProduct = usePackagingStore(state => state.setSelectedProduct);
+  const navigate = useNavigate();
 
   const currentReport = reports.length > 0 ? reports[reports.length - 1] : null;
 
@@ -63,6 +68,12 @@ export default function ProductMappingTable() {
   const [showOnlyOwnBrand, setShowOnlyOwnBrand] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [flagFilter, setFlagFilter] = useState('all'); // 'all' | 'sample' | 'refill' | 'herbal'
+
+  // ★ 빠른 등록 모달 상태
+  const [quickRegRow, setQuickRegRow] = useState(null);
+  const [quickRegForm, setQuickRegForm] = useState({});
+  const [quickRegLoading, setQuickRegLoading] = useState(false);
+  const [quickRegDone, setQuickRegDone] = useState(null);
 
   const calculateEprResult = useEprStore(state => state.calculateEprResult);
 
@@ -123,6 +134,57 @@ export default function ProductMappingTable() {
     setMappings(prev => prev.map(m =>
       m.id === rowId ? { ...m, [flagKey]: !m[flagKey] } : m
     ));
+  };
+
+  // 5. ★ 빠른 등록 모달 열기 (엑셀 데이터 자동입력)
+  const openQuickReg = (row) => {
+    const excelRow = row.excelRow || {};
+    setQuickRegRow(row);
+    setQuickRegDone(null);
+    setQuickRegForm({
+      code:           '',
+      name:           row.originalName || '',
+      prodReportName: row.originalName || '', // 실적보고 매칭용 (동일하게 세팅)
+      spec:           excelRow.capacity ? `${excelRow.capacity}${excelRow.unit || ''}` : '',
+      cosmeticsType:  '일반화장품',
+      brandType:      '자사',
+      mfgType:        '제조',
+      nameEn:         '',
+      weight:         0,
+    });
+  };
+
+  // 6. ★ 빠른 등록 실행
+  const handleQuickReg = async () => {
+    if (!quickRegForm.code || !quickRegForm.name) {
+      alert('완제품코드와 제품명은 필수입니다.');
+      return;
+    }
+    setQuickRegLoading(true);
+    try {
+      const newProduct = await addFinishedProduct(quickRegForm);
+      if (newProduct) {
+        setMappings(prev => prev.map(m =>
+          m.id === quickRegRow.id
+            ? { ...m, matchedProductId: newProduct.id, status: 'mapped' }
+            : m
+        ));
+        setQuickRegDone(newProduct.id);
+      }
+    } catch (e) {
+      alert('등록 중 오류가 발생했습니다.');
+    } finally {
+      setQuickRegLoading(false);
+    }
+  };
+
+  // 7. ★ 등록 후 BOM 등록하러 이동
+  const handleGoToBom = () => {
+    if (quickRegDone) {
+      setSelectedProduct(quickRegDone);
+      navigate('/items');
+    }
+    setQuickRegRow(null);
   };
 
   // 5. 필터링
@@ -343,6 +405,16 @@ export default function ProductMappingTable() {
                       </option>
                     ))}
                   </select>
+                  {/* ★ 미매핑 시 "\uc774 \uc81c\ud488 \ub4f1\ub85d\ud558\uae30" 버\ud2bc */}
+                  {row.status === 'unmapped' && (
+                    <button
+                      onClick={() => openQuickReg(row)}
+                      className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+                    >
+                      <PlusCircle size={12} />
+                      이 제품 바로 등록하기
+                    </button>
+                  )}
                 </td>
 
                 {/* 연간 출고량 */}
@@ -379,6 +451,126 @@ export default function ProductMappingTable() {
         <span className="text-green-600">한방(H) <strong>{flagCounts.herbal}건</strong></span>
         <span className="text-purple-600">맞춤형(C) <strong>{flagCounts.custom}건</strong></span>
       </div>
+      {/* ─── ★ 빠른 등록 모달 ─── */}
+      {quickRegRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setQuickRegRow(null)} />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 z-10">
+
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">새 제품 등록</h2>
+                <p className="text-xs text-slate-400 mt-0.5">생산실적보고 데이터가 자동 입력되었습니다. 확인 후 등록하세요.</p>
+              </div>
+              <button onClick={() => setQuickRegRow(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100">
+                ✕
+              </button>
+            </div>
+
+            {/* 모달 바디 */}
+            {!quickRegDone ? (
+              <div className="p-6 space-y-4">
+                {/* 엑셀 원본명 표시 */}
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700">
+                  포의 엑셀 상품명: <strong>{quickRegRow.originalName}</strong> &nbsp;|
+                  연간출고량: <strong>{quickRegRow.originalQty?.toLocaleString()}개</strong>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">완제품코드 <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={quickRegForm.code}
+                      onChange={e => setQuickRegForm({...quickRegForm, code: e.target.value})}
+                      placeholder="예: PROD-001"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">화장품유형</label>
+                    <select value={quickRegForm.cosmeticsType} onChange={e => setQuickRegForm({...quickRegForm, cosmeticsType: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-white">
+                      {COSMETICS_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">제품명 (국문) <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={quickRegForm.name}
+                    onChange={e => setQuickRegForm({...quickRegForm, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">생산실적보고 매칭명 <span className="text-amber-500">⭐ 중요</span></label>
+                  <input
+                    type="text"
+                    value={quickRegForm.prodReportName}
+                    onChange={e => setQuickRegForm({...quickRegForm, prodReportName: e.target.value})}
+                    className="w-full px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                  />
+                  <p className="text-[10px] text-amber-600 mt-1">엑셀 제품명과 딩어쓰기까지 이 같아야 자동 매칭됩니다.</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">규격</label>
+                    <input type="text" value={quickRegForm.spec} onChange={e => setQuickRegForm({...quickRegForm, spec: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">자사/타사</label>
+                    <select value={quickRegForm.brandType} onChange={e => setQuickRegForm({...quickRegForm, brandType: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-white">
+                      {BRAND_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">제조/수입</label>
+                    <select value={quickRegForm.mfgType} onChange={e => setQuickRegForm({...quickRegForm, mfgType: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-white">
+                      {MFG_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button onClick={() => setQuickRegRow(null)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">취소</button>
+                  <button
+                    onClick={handleQuickReg}
+                    disabled={quickRegLoading}
+                    className="px-5 py-2 text-sm font-semibold text-white rounded-lg transition-all hover:shadow-md disabled:opacity-60"
+                    style={{ background: 'linear-gradient(90deg,#10b981,#06b6d4)' }}
+                  >
+                    {quickRegLoading ? '등록 중...' : '완제품 등록'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* 등록 성공 화면 */
+              <div className="p-8 text-center space-y-4">
+                <div className="text-5xl">✅</div>
+                <p className="text-base font-bold text-slate-800">등록 완료!</p>
+                <p className="text-sm text-slate-500">이제 포장재(BOM)를 등록하리로 이동하세요.</p>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => setQuickRegRow(null)} className="px-4 py-2 text-sm text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50">
+                    더 등록하기
+                  </button>
+                  <button
+                    onClick={handleGoToBom}
+                    className="flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-lg"
+                    style={{ background: 'linear-gradient(90deg,#10b981,#06b6d4)' }}
+                  >
+                    BOM 등록하러 가기 <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
