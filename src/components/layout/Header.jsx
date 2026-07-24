@@ -28,7 +28,7 @@ export default function Header() {
       style={{ boxShadow: '0 1px 8px 0 rgba(16,185,129,0.06)' }}
     >
       {/* 좌측: JT 로고 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1">
         <img
           src="/JT_Logo_Horizontal_copy.svg"
           alt="Janytree Logo"
@@ -41,8 +41,15 @@ export default function Header() {
         <span className="text-sm font-medium text-slate-500">{pageTitle}</span>
       </div>
 
+      {/* 중앙: 앱 공식 타이틀 */}
+      <div className="hidden lg:flex items-center justify-center flex-1">
+        <div className="text-sm font-bold text-slate-700 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 whitespace-nowrap shadow-sm">
+          Janytree PKG Portal <span className="font-normal text-slate-500 ml-1">(화장품 패키징 및 생산자책임재활용제도(EPR) 실적신고 자동화 시스템)</span>
+        </div>
+      </div>
+
       {/* 우측: 날짜 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-end gap-3 flex-1">
         <span className="text-xs text-slate-400 hidden sm:block">{today}</span>
         {/* 작은 브랜드 뱃지 */}
         <span
