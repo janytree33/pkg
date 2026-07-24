@@ -85,12 +85,26 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     }
   };
 
-  // 저장 버튼 클릭 시 호출
-  const handleSave = () => {
+  // 저장 버튼 클릭 시 호출 (파일 있으면 Base64로 변환)
+  const handleSave = async () => {
+    let specFileData = editData?.specFileData || null;
+    let specFileName = editData?.specFileName || null;
+
+    if (formData.specFile) {
+      // 파일을 Base64 문자열로 변환 (브라우저에서 읽기)
+      specFileData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result); // "data:application/pdf;base64,..."
+        reader.readAsDataURL(formData.specFile);
+      });
+      specFileName = formData.specFile.name;
+    }
+
     onSave({
       ...formData,
-      // 텍스트로 된 중량을 숫자형으로 확실하게 변환
-      weightPerUnit: parseFloat(formData.weightPerUnit) || 0
+      weightPerUnit: parseFloat(formData.weightPerUnit) || 0,
+      specFileData,   // Base64 데이터
+      specFileName,   // 파일명 (표시용)
     });
   };
 
@@ -234,11 +248,63 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700  mb-1">사양서 파일</label>
-          <input 
-            type="file" 
-            onChange={e => setFormData({...formData, specFile: e.target.files[0]})}
-            className="w-full px-3 py-2 border border-gray-300  rounded-md   file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-blue-700 hover:file:bg-brand-100"
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            📎 성적서 / 사양서 파일 <span className="text-xs text-slate-400 font-normal">(PDF, 이미지 · 최대 5MB)</span>
+          </label>
+
+          {/* 기존 첨부 파일 표시 */}
+          {editData?.specFileName && !formData.specFile && (
+            <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+              <span>📄</span>
+              <span className="font-medium">{editData.specFileName}</span>
+              <span className="text-blue-400">(기존 첨부파일)</span>
+            </div>
+          )}
+
+          {/* 파일 선택 영역 */}
+          <div
+            className="border-2 border-dashed border-slate-200 rounded-lg px-4 py-3 hover:border-emerald-300 transition-colors cursor-pointer bg-slate-50"
+            onClick={() => document.getElementById('specFileInput').click()}
+          >
+            {formData.specFile ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-emerald-700">
+                  <span>✅</span>
+                  <span className="font-medium">{formData.specFile.name}</span>
+                  <span className="text-slate-400">({(formData.specFile.size / 1024).toFixed(0)}KB)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setFormData({...formData, specFile: null}); }}
+                  className="text-slate-400 hover:text-red-500 text-xs"
+                >
+                  ✕ 제거
+                </button>
+              </div>
+            ) : (
+              <div className="text-center text-slate-400 text-xs py-1">
+                <div className="text-lg mb-0.5">📂</div>
+                클릭하여 파일 선택 (PDF, PNG, JPG)
+              </div>
+            )}
+          </div>
+
+          <input
+            id="specFileInput"
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files[0];
+              if (!file) return;
+              // 5MB 용량 제한 체크
+              if (file.size > 5 * 1024 * 1024) {
+                alert(`파일 크기가 너무 큽니다.\n최대 5MB까지 첨부 가능합니다.\n현재 파일: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
+                e.target.value = null;
+                return;
+              }
+              setFormData({...formData, specFile: file});
+            }}
           />
         </div>
 

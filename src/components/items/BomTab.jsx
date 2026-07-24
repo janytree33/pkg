@@ -154,6 +154,25 @@ export default function BomTab() {
       }
     },
     {
+      // ★ 성적서/사양서 첨부 여부 표시
+      header: '성적서',
+      accessor: row => {
+        const comp = packagingComponents.find(c => c.id === row.componentId);
+        if (comp?.specFileData) {
+          return (
+            <button
+              onClick={() => window.open(comp.specFileData, '_blank')}
+              title={comp.specFileName || '성적서 보기'}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200 rounded-full hover:bg-blue-200 transition-colors"
+            >
+              📎 있음
+            </button>
+          );
+        }
+        return <span className="text-[10px] text-slate-300">없음</span>;
+      }
+    },
+    {
       header: '관리',
       accessor: row => (
         <button

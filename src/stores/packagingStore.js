@@ -39,8 +39,11 @@ const usePackagingStore = create(
               type: c.type,
               material: c.material,
               weight: c.weight_g,
+              weightPerUnit: c.weight_g, // EPR 집계에서 관리하는 필드명
               supplier: c.supplier,
               specFile: c.supplier_spec_doc,
+              specFileData: c.spec_file_data || null,     // ★ Base64 데이터
+              specFileName: c.spec_file_name || null,     // ★ 파일명
               description: c.notes,
               createdAt: c.created_at,
             })) });
@@ -117,9 +120,11 @@ const usePackagingStore = create(
           spec: component.spec || '',
           type: component.type,
           material: component.material,
-          weight_g: component.weight || 0,
+          weight_g: component.weight || component.weightPerUnit || 0,
           supplier: component.supplier || '',
           supplier_spec_doc: component.specFile || '',
+          spec_file_data: component.specFileData || null,   // ★ Base64 데이터
+          spec_file_name: component.specFileName || null,   // ★ 파일명
           notes: component.description || ''
         };
         const { data } = await supabase.from('packaging_components').insert([payload]).select().single();
