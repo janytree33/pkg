@@ -85,14 +85,34 @@ export default function AccountManagementTable() {
             EPR 관련 사이트 계정
           </h3>
         </div>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white 
-                     bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          계정 추가
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if(window.confirm('계정 목록을 기본값으로 초기화하시겠습니까? (저장된 정보 삭제됨)')) {
+                useSettingsStore.setState({
+                  eprAccounts: require('../../utils/constants').DEFAULT_EPR_SITES.map((site) => ({
+                    id: require('../../utils/constants').generateId(),
+                    ...site,
+                    loginId: '',
+                    password: '',
+                  }))
+                });
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 
+                       bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            목록 초기화
+          </button>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white 
+                       bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            계정 추가
+          </button>
+        </div>
       </div>
 
       {/* 보안 안내 */}

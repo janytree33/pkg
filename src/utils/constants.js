@@ -165,13 +165,13 @@ export const EPR_EXEMPTION_CONDITIONS = [
 // ─── 기본 EPR 관련 사이트 ───
 export const DEFAULT_EPR_SITES = [
   {
-    siteName: '자원순환통합징수포털',
-    url: 'https://pub.keco.or.kr',
+    siteName: '한국환경공단 자원순환통합징수',
+    url: 'https://portal.budamgum.or.kr/cmb/',
     notes: 'EPR 출고실적 신고, 분담금 납부',
   },
   {
     siteName: 'KPRC 포장재재활용사업공제조합',
-    url: 'https://www.kprc.or.kr',
+    url: 'https://www.pkg.or.kr',
     notes: '포장재 분담금 공제조합',
   },
   {
@@ -180,7 +180,7 @@ export const DEFAULT_EPR_SITES = [
     notes: 'EPR 제도 안내, 가이드북 다운로드',
   },
   {
-    siteName: '한국화장품협회',
+    siteName: '대한화장품협회',
     url: 'https://www.kcia.or.kr',
     notes: '화장품 업종 생산실적 보고',
   },
