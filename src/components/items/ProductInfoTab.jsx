@@ -13,7 +13,7 @@ export default function ProductInfoTab() {
     code: '',
     name: '',
     prodReportName: '',
-    volume: '',
+    weight: '',
     brandType: '',
     mfgType: ''
   });
@@ -25,7 +25,7 @@ export default function ProductInfoTab() {
         code: product.code || '',
         name: product.name || '',
         prodReportName: product.prodReportName || '',
-        volume: product.volume || '',
+        weight: product.weight || '',
         brandType: product.brandType || (BRAND_TYPES[0]?.code || 'OWN'),
         mfgType: product.mfgType || (MFG_TYPES[0]?.code || 'MFG')
       });
@@ -107,8 +107,8 @@ export default function ProductInfoTab() {
           <label className="block text-sm font-medium text-gray-700  mb-1">용량 (ml)</label>
           <input 
             type="number" 
-            value={formData.volume} 
-            onChange={e => setFormData({...formData, volume: e.target.value})}
+            value={formData.weight} 
+            onChange={e => setFormData({...formData, weight: e.target.value})}
             className="w-full px-3 py-2 border border-gray-300  rounded-md  dark:text-white"
           />
         </div>

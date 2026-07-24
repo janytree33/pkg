@@ -14,6 +14,7 @@ import ItemManagement from './pages/ItemManagement';
 import DocumentManagement from './pages/DocumentManagement';
 import EprReporting from './pages/EprReporting';
 import Settings from './pages/Settings';
+import PackagingMaster from './pages/PackagingMaster';
 import { SIDEBAR_MENUS } from './utils/constants';
 
 function Layout() {
@@ -35,6 +36,7 @@ function Layout() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/items" element={<ItemManagement />} />
+            <Route path="/packaging" element={<PackagingMaster />} />
             <Route path="/documents" element={<DocumentManagement />} />
             <Route path="/epr" element={<EprReporting />} />
             <Route path="/settings" element={<Settings />} />

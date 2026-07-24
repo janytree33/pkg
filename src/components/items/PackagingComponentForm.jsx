@@ -15,7 +15,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     code: '',
     name: '',
     spec: '',
-    category: PACKAGING_CATEGORIES[0]?.code || '',
+    category: PACKAGING_CATEGORIES[0]?.value || '',
     type: '포장부자재', // 충진부자재, 포장부자재 구분
     containerType: '',
     material: '',
@@ -32,7 +32,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         code: editData.code || '',
         name: editData.name || '',
         spec: editData.spec || '',
-        category: editData.category || PACKAGING_CATEGORIES[0]?.code || '',
+        category: editData.category || PACKAGING_CATEGORIES[0]?.value || '',
         type: editData.type || '포장부자재',
         containerType: editData.containerType || '',
         material: editData.material || '',
@@ -46,7 +46,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         code: '',
         name: '',
         spec: '',
-        category: PACKAGING_CATEGORIES[0]?.code || '',
+        category: PACKAGING_CATEGORIES[0]?.value || '',
         type: '포장부자재',
         containerType: '',
         material: '',
@@ -108,8 +108,8 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     });
   };
 
-  // 객체 맵핑을 배열로 변환하여 드롭다운에서 사용하기 쉽게 만듭니다.
-  const containerOptions = Object.entries(CONTAINER_TYPE_MAP).map(([code, label]) => ({ code, label }));
+  // 객체 맵핑을 배열로 변환하여 드롭다운에서 사용하기 쉽게 만듭니다. (이제 상수가 이미 배열임)
+  const containerOptions = CONTAINER_TYPE_MAP;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editData ? '포장재 수정' : '새 포장재 등록'} size="lg">
@@ -221,7 +221,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             >
               <option value="">선택</option>
               {MATERIAL_OPTIONS.map(m => (
-                <option key={m.code} value={m.code}>{m.label}</option>
+                <option key={m} value={m}>{m}</option>
               ))}
             </select>
           </div>

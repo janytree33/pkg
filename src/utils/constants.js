@@ -209,7 +209,8 @@ export const EPR_EXCEL_COLUMNS = {
 // ─── 사이드바 메뉴 ───
 export const SIDEBAR_MENUS = [
   { id: 'dashboard', label: '대시보드', path: '/', icon: 'LayoutDashboard' },
-  { id: 'items', label: '품목 및 포장재 관리', path: '/items', icon: 'Package' },
+  { id: 'items', label: '품목 및 완제품 관리', path: '/items', icon: 'Package' },
+  { id: 'packaging', label: '포장재 마스터 관리', path: '/packaging', icon: 'Package' },
   { id: 'documents', label: '문서발행 관리', path: '/documents', icon: 'FileText' },
   { id: 'epr', label: 'EPR 실적신고 관리', path: '/epr', icon: 'BarChart3' },
   { id: 'settings', label: '기준 및 계정관리', path: '/settings', icon: 'Settings' },
