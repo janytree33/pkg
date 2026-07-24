@@ -90,8 +90,8 @@ export default function EprExemptionPanel() {
 
               {/* EPR 제외 항목 */}
               <tr className="bg-slate-50/50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
                     <span className="text-lg">📦</span>
                     <span className="font-semibold text-slate-500 text-sm line-through">일반 종이 단상자</span>
                     <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">EPR 대상 아님</span>
@@ -149,7 +149,9 @@ export default function EprExemptionPanel() {
             <div className="text-xs text-blue-800">
               <p className="font-semibold">법적 근거</p>
               <p>『자원의 절약과 재활용촉진에 관한 법률 시행령』 제18조 (의무생산자의 범위)</p>
-              <p className="mt-1 text-blue-600">출처: 한국환경공단 EPR 출고·수입실적서 제출 안내 가이드북</p>
+              <p className="mt-1 text-blue-600">
+                출처: <a onClick={() => window.open('/docs/epr_guide.pdf', '_blank')} className="underline hover:text-blue-800 font-medium cursor-pointer">한국환경공단 EPR 가이드북 다운로드 <ExternalLink size={12} className="inline mb-0.5" /></a>
+              </p>
             </div>
           </div>
         </div>
