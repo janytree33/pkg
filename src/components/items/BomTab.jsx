@@ -2,20 +2,18 @@
  * BomTab.jsx
  * ─────────────────────────────────────
  * BOM(부품 구성표) 탭 컴포넌트
- * - 포장부자재 / 충진부자재 목록 표시
- * - 생산수량 입력 시 각 부자재의 총 필요 중량(g) 자동 계산
- * - 합성수지 총 중량 합계 표시 (EPR 신고용)
+ * - 스마트 공정 분류 적용 (단상자, 박스, 라벨 등 자동 포장공정 배치)
+ * - BOM 확정/해제 기능
  */
 import React, { useState } from 'react';
 import usePackagingStore from '../../stores/packagingStore';
 import DataTable from '../common/DataTable';
 import PackagingComponentForm from './PackagingComponentForm';
 import BomComponentSelector from './BomComponentSelector';
-import { Plus, Copy, Trash2, FlaskConical } from 'lucide-react';
+import { Plus, Copy, Trash2, FlaskConical, Lock, Unlock, CheckCircle2 } from 'lucide-react';
 import { PLASTIC_MATERIALS } from '../../utils/constants';
 
 export default function BomTab() {
-  // 포장재 관련 스토어 함수 및 상태들을 가져옵니다.
   const {
     finishedProducts,
     selectedProductId,
@@ -24,105 +22,170 @@ export default function BomTab() {
     updateBomItem,
     createNewVersion,
     addPackagingComponent,
-    packagingComponents
+    packagingComponents,
+    toggleVersionConfirm
   } = usePackagingStore();
 
-  const product = finishedProducts.find(p => p.id === selectedProductId);
+  const product = finishedProducts.find(p => String(p.id) === String(selectedProductId));
   const [selectedVersionIdx, setSelectedVersionIdx] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-
-  // ★ 생산수량 상태 (기본값 1개 - 이 숫자를 바꾸면 총 필요량이 자동으로 바뀜)
+  const [activeProcessType, setActiveProcessType] = useState('충진');
   const [productionQty, setProductionQty] = useState(1);
 
   if (!product) return null;
 
-  // 버전 히스토리 가져오기
   const versions = product.versions || [];
   const currentVersionIdx = Math.min(selectedVersionIdx, Math.max(0, versions.length - 1));
   const currentVersion = versions[currentVersionIdx];
+  const isConfirmed = currentVersion?.isConfirmed || false;
 
-  // 기존 버전을 복사해 새 버전을 만드는 함수
+  // 🌟 [스마트 공정 판별 함수] 단상자, 박스, 라벨 등 포장 부자재 자동 감지
+  const getItemProcessType = (item) => {
+    if (item.processType === '포장') return '포장';
+    if (item.processType === '충진') return '충진';
+
+    const comp = packagingComponents.find(c => String(c.id) === String(item.componentId));
+    const searchText = [
+      item.partType,
+      comp?.name,
+      comp?.partType,
+      comp?.containerType,
+      comp?.code
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    const packagingKeywords = ['단상자', '상자', '박스', '카톤', '라벨', '스티커', '테이프', '아웃박스', 'outbox', 'box', 'label', '포장', '설명서', '리플렛'];
+    const isPackaging = packagingKeywords.some(kw => searchText.includes(kw));
+
+    return isPackaging ? '포장' : '충진';
+  };
+
   const handleCreateNewVersion = () => {
     createNewVersion(product.id);
     setSelectedVersionIdx(versions.length);
   };
 
-  // 모달 폼에서 포장재를 신규 등록했을 때의 처리
   const handleSaveComponent = async (data) => {
-    // 1. 포장재 마스터에 저장 (비동기 대기)
     const newComponent = await addPackagingComponent(data);
-    
-    // 2. 저장이 성공하여 진짜 ID가 발급되었을 때만 BOM에 추가
     if (newComponent && newComponent.id) {
-      addBomItem(product.id, currentVersionIdx, {
+      await addBomItem(product.id, currentVersionIdx, {
         componentId: newComponent.id,
-        qty: 1
+        qty: 1,
+        processType: activeProcessType, 
+        partType: data.partType || '' 
       });
     }
     setIsFormOpen(false);
   };
 
-  // Selector에서 기존 포장재들을 선택했을 때의 처리
-  const handleSelectComponents = async (selectedIds) => {
+  const handleSelectComponents = async (selectedIds, processType) => {
+    const targetProcess = processType || activeProcessType;
+
     for (const id of selectedIds) {
-      // 이미 있는지 확인(중복 방지)
-      const exists = currentVersion?.bomItems.some(item => item.componentId === id);
+      const comp = packagingComponents.find(c => String(c.id) === String(id));
+      const realComponentId = comp ? comp.id : id;
+
+      const exists = (currentVersion?.bomItems || []).some(
+        item => String(item.componentId) === String(realComponentId) && getItemProcessType(item) === targetProcess
+      );
+
       if (!exists) {
         await addBomItem(product.id, currentVersionIdx, {
-          componentId: id,
-          qty: 1
+          componentId: realComponentId,
+          qty: 1,
+          processType: targetProcess, 
+          partType: comp?.partType || '' 
         });
       }
     }
     setIsSelectorOpen(false);
   };
 
-  // 합성수지(플라스틱) 총 중량 합산 (1개 기준)
-  const totalPlasticWeightPerUnit = currentVersion?.bomItems.reduce((sum, item) => {
-    const component = packagingComponents.find(c => c.id === item.componentId);
-    if (component && PLASTIC_MATERIALS.includes(component.material)) {
-      const weight = Number(component.weightPerUnit || component.weight || 0);
-      const qty = Number(item.qty || 1);
-      return sum + (weight * qty);
-    }
-    return sum;
-  }, 0) || 0;
+  const totalPlasticWeightPerUnit = (currentVersion?.bomItems || []).reduce((sum, item) => {
+    const component = packagingComponents.find(c => String(c.id) === String(item.componentId));
+    if (!component) return sum;
 
-  // ★ 생산수량을 곱한 합성수지 총 중량
+    let plasticWeight = 0;
+    if (component.subComponents && component.subComponents.length > 0) {
+      component.subComponents.forEach(sub => {
+        if (PLASTIC_MATERIALS.includes(sub.material)) {
+          plasticWeight += Number(sub.weight || 0);
+        }
+      });
+      if (plasticWeight === 0 && PLASTIC_MATERIALS.includes(component.material)) {
+        plasticWeight = Number(component.weightPerUnit || component.weight || 0);
+      }
+    } else if (PLASTIC_MATERIALS.includes(component.material)) {
+      plasticWeight = Number(component.weightPerUnit || component.weight || 0);
+    }
+
+    const qty = Number(item.qty || 1);
+    return sum + (plasticWeight * qty);
+  }, 0);
+
   const totalPlasticWeightByProduction = totalPlasticWeightPerUnit * productionQty;
 
-  // 충진부자재 vs 포장부자재 분리
-  const chargingItems = currentVersion?.bomItems.filter(item => {
-    const comp = packagingComponents.find(c => c.id === item.componentId);
-    return comp && comp.type === '충진부자재';
-  }) || [];
+  // 🌟 스마트 판별 로직 적용
+  const chargingItems = (currentVersion?.bomItems || []).filter(item => getItemProcessType(item) === '충진');
+  const packagingItems = (currentVersion?.bomItems || []).filter(item => getItemProcessType(item) === '포장');
 
-  const packagingItems = currentVersion?.bomItems.filter(item => {
-    const comp = packagingComponents.find(c => c.id === item.componentId);
-    return !comp || comp.type !== '충진부자재';
-  }) || [];
-
-  // ─── 테이블 컬럼 정의 ───
   const columns = [
-    { label: '선택', render: () => <input type="checkbox" className="rounded" /> },
+    { label: '선택', render: () => <input type="checkbox" disabled={isConfirmed} className="rounded disabled:opacity-50" /> },
     {
-      label: '부재료등록번호',
-      render: (_, row) => packagingComponents.find(c => c.id === row.componentId)?.regNo || '-'
+      label: '공정',
+      render: (_, row) => {
+        const proc = getItemProcessType(row);
+        return (
+          <span className={`px-2.5 py-1 text-xs font-bold rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 ${
+            proc === '충진' ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-100 text-cyan-700'
+          }`}>
+            {proc}
+          </span>
+        );
+      }
+    },
+    {
+      label: '부품유형',
+      render: (_, row) => (
+        <input
+          type="text"
+          value={row.partType || ''}
+          placeholder="예: 용기"
+          disabled={isConfirmed}
+          onChange={e => updateBomItem(product.id, currentVersionIdx, row.id, { partType: e.target.value })}
+          className="w-20 px-2 py-1 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      )
     },
     {
       label: '부재료코드',
-      render: (_, row) => packagingComponents.find(c => c.id === row.componentId)?.code || '-'
+      render: (_, row) => packagingComponents.find(c => String(c.id) === String(row.componentId))?.code || '-'
     },
     {
       label: '부재료명',
-      render: (_, row) => packagingComponents.find(c => c.id === row.componentId)?.name || '알 수 없음'
+      render: (_, row) => packagingComponents.find(c => String(c.id) === String(row.componentId))?.name || '알 수 없음'
     },
     {
       label: '재질',
       render: (_, row) => {
-        const comp = packagingComponents.find(c => c.id === row.componentId);
-        const mat = comp?.material || '-';
+        const comp = packagingComponents.find(c => String(c.id) === String(row.componentId));
+        if (!comp) return '-';
+
+        if (comp.subComponents && comp.subComponents.length > 0) {
+          return (
+            <div className="flex flex-col gap-0.5">
+              {comp.subComponents.map((sub, idx) => (
+                <div key={idx} className="text-xs whitespace-nowrap">
+                  <span className="font-medium text-slate-800">
+                    {sub.name ? `${sub.name}: ` : ''}{sub.material || '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        const mat = comp.material || '-';
         const isPlastic = PLASTIC_MATERIALS.includes(mat);
         return isPlastic
           ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">{mat}</span>
@@ -132,8 +195,8 @@ export default function BomTab() {
     {
       label: '개당 중량(g)',
       render: (_, row) => {
-        const component = packagingComponents.find(c => c.id === row.componentId);
-        const w = component?.weightPerUnit || 0;
+        const component = packagingComponents.find(c => String(c.id) === String(row.componentId));
+        const w = Number(component?.weightPerUnit || component?.weight || 0);
         return (
           <span className="font-mono text-sm text-slate-700">
             {w.toFixed(4)} g
@@ -148,21 +211,22 @@ export default function BomTab() {
           type="number"
           value={row.qty}
           min="1"
+          disabled={isConfirmed}
           onChange={e => updateBomItem(product.id, currentVersionIdx, row.id, { qty: parseInt(e.target.value) || 1 })}
-          className="w-16 px-2 py-1 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          className="w-16 px-2 py-1 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:bg-slate-100 disabled:text-slate-400"
         />
       )
     },
     {
       label: '총 중량 /1개(g)',
       render: (_, row) => {
-        const component = packagingComponents.find(c => c.id === row.componentId);
-        const weight = component ? (component.weightPerUnit * row.qty) : 0;
+        const component = packagingComponents.find(c => String(c.id) === String(row.componentId));
+        const unitWeight = Number(component?.weightPerUnit || component?.weight || 0);
+        const weight = unitWeight * (row.qty || 1);
         return <span className="font-mono text-sm text-slate-600">{weight.toFixed(4)}</span>;
       }
     },
     {
-      // ★ 생산수량 입력 시 자동으로 총 필요 수량 계산
       label: `총 필요 수량(EA)`,
       render: (_, row) => {
         const totalQty = (row.qty || 1) * productionQty;
@@ -174,42 +238,13 @@ export default function BomTab() {
       }
     },
     {
-      // ★ 성적서/사양서 첨부 여부 표시
-      label: '성적서',
-      render: (_, row) => {
-        const comp = packagingComponents.find(c => c.id === row.componentId);
-        
-        // 다중 파일(specFiles) 또는 단일 파일(specFile) 호환성 체크
-        let fileCount = 0;
-        try {
-          if (comp?.specFile) {
-            const parsed = JSON.parse(comp.specFile);
-            if (Array.isArray(parsed)) fileCount = parsed.length;
-          }
-        } catch (e) {
-          if (comp?.specFile) fileCount = 1;
-        }
-
-        if (fileCount > 0) {
-          return (
-            <button
-              title="성적서 있음"
-              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200 rounded-full cursor-default"
-            >
-              📎 {fileCount}개
-            </button>
-          );
-        }
-        return <span className="text-[10px] text-slate-300">없음</span>;
-      }
-    },
-    {
       label: '관리',
       render: (_, row) => (
         <button
           onClick={() => removeBomItem(product.id, currentVersionIdx, row.id)}
-          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="삭제"
+          disabled={isConfirmed}
+          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+          title={isConfirmed ? "확정된 BOM은 삭제할 수 없습니다" : "삭제"}
         >
           <Trash2 size={15} />
         </button>
@@ -219,23 +254,33 @@ export default function BomTab() {
 
   return (
     <div className="flex flex-col h-full space-y-4">
-
-      {/* ─── 헤더 영역 ─── */}
       <div className="flex flex-wrap justify-between items-center gap-3">
-        {/* 버전 선택 */}
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold text-slate-800">BOM 목록</h2>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <select
               value={currentVersionIdx}
               onChange={e => setSelectedVersionIdx(parseInt(e.target.value))}
               className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-300 focus:outline-none"
             >
               {versions.map((v, idx) => (
-                <option key={idx} value={idx}>{v.version}</option>
+                <option key={idx} value={idx}>{v.version} {v.isConfirmed ? '(확정완료)' : ''}</option>
               ))}
             </select>
-            {versions.length > 1 && (
+
+            {isConfirmed ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-100 border border-emerald-200 rounded-full">
+                <CheckCircle2 size={13} />
+                <span>확정 완료</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full">
+                <Unlock size={13} />
+                <span>작성 중</span>
+              </span>
+            )}
+
+            {versions.length > 1 && !isConfirmed && (
               <button
                 onClick={() => {
                   if (window.confirm(`${currentVersion.version} 버전을 정말 삭제하시겠습니까?`)) {
@@ -252,8 +297,19 @@ export default function BomTab() {
           </div>
         </div>
 
-        {/* 버튼 그룹 */}
         <div className="flex gap-2">
+          <button
+            onClick={() => toggleVersionConfirm(product.id, currentVersionIdx)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg transition-all shadow-sm ${
+              isConfirmed
+                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+          >
+            {isConfirmed ? <Unlock size={15} /> : <Lock size={15} />}
+            <span>{isConfirmed ? '확정 해제 (수정 허용)' : 'BOM 확정하기'}</span>
+          </button>
+
           <button
             onClick={handleCreateNewVersion}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
@@ -261,18 +317,41 @@ export default function BomTab() {
             <Copy size={15} />
             <span>새 버전 만들기</span>
           </button>
+
           <button
-            onClick={() => setIsSelectorOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-all hover:shadow-md"
-            style={{ background: 'linear-gradient(90deg, #10b981, #06b6d4)' }}
+            onClick={() => {
+              if (isConfirmed) {
+                alert("🔒 이미 확정된 BOM 버전입니다. 수정하려면 [확정 해제] 후 진행해 주세요.");
+                return;
+              }
+              setActiveProcessType('충진');
+              setIsSelectorOpen(true);
+            }}
+            disabled={isConfirmed}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-all hover:shadow-md bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
             <Plus size={15} />
-            <span>포장재 추가</span>
+            <span>충진부자재 추가</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (isConfirmed) {
+                alert("🔒 이미 확정된 BOM 버전입니다. 수정하려면 [확정 해제] 후 진행해 주세요.");
+                return;
+              }
+              setActiveProcessType('포장');
+              setIsSelectorOpen(true);
+            }}
+            disabled={isConfirmed}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-all hover:shadow-md bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+          >
+            <Plus size={15} />
+            <span>포장부자재 추가</span>
           </button>
         </div>
       </div>
 
-      {/* ★ 생산수량 입력 박스 (핵심 기능) */}
       <div
         className="flex items-center gap-4 p-4 rounded-xl border border-emerald-100"
         style={{ background: 'linear-gradient(90deg, #f0fdf9 0%, #ecfeff 100%)' }}
@@ -295,15 +374,12 @@ export default function BomTab() {
         </div>
       </div>
 
-      {/* BOM 리스트 영역 */}
       <div className="flex-1 overflow-auto space-y-5">
-
-        {/* 충진부자재 */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-4 bg-emerald-400 rounded-full" />
             <h3 className="font-semibold text-slate-700 text-sm">
-              충진부자재
+              충진 공정
               <span className="ml-2 text-xs font-normal text-slate-400">(총 {chargingItems.length}개)</span>
             </h3>
           </div>
@@ -311,17 +387,15 @@ export default function BomTab() {
             <DataTable
               columns={columns}
               data={chargingItems}
-              emptyMessage="충진부자재가 없습니다. '포장재 추가' 버튼을 눌러 추가해주세요."
+              emptyMessage="충진 공정에 등록된 부자재가 없습니다. '[+ 충진부자재 추가]' 버튼을 눌러주세요."
             />
           </div>
         </div>
-
-        {/* 포장부자재 */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-4 bg-cyan-400 rounded-full" />
             <h3 className="font-semibold text-slate-700 text-sm">
-              포장부자재
+              포장 공정
               <span className="ml-2 text-xs font-normal text-slate-400">(총 {packagingItems.length}개)</span>
             </h3>
           </div>
@@ -329,18 +403,16 @@ export default function BomTab() {
             <DataTable
               columns={columns}
               data={packagingItems}
-              emptyMessage="포장부자재가 없습니다. '포장재 추가' 버튼을 눌러 추가해주세요."
+              emptyMessage="포장 공정에 등록된 부자재가 없습니다. '[+ 포장부자재 추가]' 버튼을 눌러주세요."
             />
           </div>
         </div>
       </div>
 
-      {/* ─── 하단 합계 패널 ─── */}
       <div
         className="flex flex-wrap justify-between items-center p-4 rounded-xl border border-emerald-100 gap-4"
         style={{ background: 'linear-gradient(90deg, #f0fdf9 0%, #ecfeff 100%)' }}
       >
-        {/* 1개당 합성수지 중량 */}
         <div className="text-right">
           <div className="text-xs text-slate-500 mb-1">합성수지 중량 / 제품 1개</div>
           <div className="text-lg font-bold text-slate-800 font-mono">
@@ -348,11 +420,7 @@ export default function BomTab() {
             <span className="text-sm font-normal text-slate-500 ml-1">g</span>
           </div>
         </div>
-
-        {/* 화살표 */}
         <div className="text-slate-300 text-xl">×</div>
-
-        {/* 생산수량 */}
         <div className="text-right">
           <div className="text-xs text-slate-500 mb-1">생산수량</div>
           <div className="text-lg font-bold text-slate-800 font-mono">
@@ -360,11 +428,7 @@ export default function BomTab() {
             <span className="text-sm font-normal text-slate-500 ml-1">개</span>
           </div>
         </div>
-
-        {/* = */}
         <div className="text-slate-300 text-xl">=</div>
-
-        {/* 합성수지 총 중량 */}
         <div className="text-right">
           <div className="text-xs text-emerald-600 font-medium mb-1">합성수지 총 배출 중량 (EPR 신고용)</div>
           <div className="text-2xl font-bold text-emerald-700 font-mono">
@@ -377,19 +441,18 @@ export default function BomTab() {
         </div>
       </div>
 
-      {/* 포장재 추가/수정용 모달 폼 */}
       <PackagingComponentForm
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSave={handleSaveComponent}
       />
-
-      {/* 포장재 선택 모달 */}
+      
       <BomComponentSelector
         isOpen={isSelectorOpen}
         onClose={() => setIsSelectorOpen(false)}
         onSelect={handleSelectComponents}
         onOpenNewForm={() => setIsFormOpen(true)}
+        processType={activeProcessType} 
       />
     </div>
   );

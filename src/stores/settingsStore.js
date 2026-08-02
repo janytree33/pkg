@@ -2,11 +2,12 @@
  * settingsStore.js
  * ─────────────────────────────────────
  * 기준관리 & 계정 관리 스토어
- * 회사 정보, EPR 사이트 계정, 테마 설정 관리
+ * 회사 정보, EPR 사이트 계정, 포장형태, 테마 설정 관리
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { generateId, DEFAULT_EPR_SITES } from '../utils/constants';
+// 방금 우리가 만든 DEFAULT_PART_TYPES도 불러옵니다.
+import { generateId, DEFAULT_EPR_SITES, DEFAULT_PART_TYPES } from '../utils/constants';
 import { encrypt, decrypt } from '../utils/encryption';
 import { supabase } from '../lib/supabase';
 
@@ -34,6 +35,29 @@ const useSettingsStore = create(
         ...site,
         loginId: '',
         password: '',  // AES 암호화된 상태로 저장
+      })),
+
+      // ─── 포장형태 관리 (새로 추가됨) ───
+      // constants.js의 12개 기본값을 초기값으로 넣어줍니다.
+      packagingTypes: DEFAULT_PART_TYPES.map(name => ({
+        id: generateId(),
+        name: name,
+        createdAt: new Date().toISOString()
+      })),
+      
+      // 새 포장형태를 추가하는 마법 주문
+      addPackagingType: (name) => set((state) => ({
+        packagingTypes: [...state.packagingTypes, { id: generateId(), name, createdAt: new Date().toISOString() }]
+      })),
+      
+      // 기존 포장형태의 이름을 바꾸는 마법 주문
+      updatePackagingType: (id, name) => set((state) => ({
+        packagingTypes: state.packagingTypes.map(pt => pt.id === id ? { ...pt, name } : pt)
+      })),
+      
+      // 안쓰는 포장형태를 삭제하는 마법 주문
+      deletePackagingType: (id) => set((state) => ({
+        packagingTypes: state.packagingTypes.filter(pt => pt.id !== id)
       })),
 
       // ─── 테마 (라이트/다크) ───
@@ -235,7 +259,7 @@ const useSettingsStore = create(
       },
     }),
     {
-      name: 'janytree-settings-store',
+      name: 'janytree-settings-store', // 이 이름으로 브라우저에 저장됩니다.
     }
   )
 );

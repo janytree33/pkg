@@ -5,43 +5,91 @@
  * 화장품 용기별 EPR 품목코드 매핑, 재질 목록, 기본값 등
  */
 
+// ─── 포장형태 분류 12개 기본 항목 ───
+export const DEFAULT_PART_TYPES = [
+  '용기',
+  '캡/뚜껑',
+  '펌프/스프레이',
+  '단상자',
+  '라벨',
+  '수축필름',
+  '설명서',
+  '스포이드',
+  '완충재',
+  '리필파우치',
+  '실링',
+  '기타'
+];
+
+// ─── 0460 필름구분 ───
+export const FILM_SUB_TYPES = [
+  { value: '일반(단일)', label: '일반(단일)' },
+  { value: '복합', label: '복합' },
+  { value: '수축', label: '수축' },
+  { value: '스트레치', label: '스트레치' }
+];
+
+// ─── 평가결과 ───
+export const EVAL_RESULT_OPTIONS = [
+  { value: '최우수', label: '최우수' },
+  { value: '우수', label: '우수' },
+  { value: '보통', label: '보통' },
+  { value: '어려움', label: '어려움' }
+];
+
+// ─── 표시예외 ───
+export const EVAL_EXCEPTION_OPTIONS = [
+  { value: '해당없음', label: '해당없음' },
+  { value: '표시면적 협소', label: '표시면적 협소' },
+  { value: '다국어라벨', label: '다국어라벨' }
+];
+
 // ─── 화장품 용기 형태 → EPR 품목코드 매핑 ───
-// 사용자(연구원/관리자)에게 친숙한 이름으로 드롭다운을 보여주고,
-// 내부적으로 EPR 공식 품목코드로 자동 변환합니다.
+// 신규 표준 코드(0110, 0490)와 기존 DB 호환 코드(0120, 0460)를 모두 포함하여 다운 방지
 export const CONTAINER_TYPE_MAP = [
+  { label: '일반팩(단상자 등)', code: '0110', desc: '종이 단상자, 2차 포장, 슬리브, 설명서, 내지' },
+  { label: '일반팩(단상자 등 - 기존)', code: '0120', desc: '종이 단상자 (기존 DB 데이터 호환용)' },
   { label: '플라스틱병(PET-무색)', code: '0410', desc: '투명 PET 병 (스킨, 로션)' },
   { label: '플라스틱병(PET-유색)', code: '0411', desc: '유색 PET 병' },
   { label: '플라스틱병(PET-복합)', code: '0412', desc: 'PET 복합재질' },
   { label: '플라스틱 용기/단지(PE/PP/ABS 단일)', code: '0450', desc: '크림 단지, 단일재질 용기' },
   { label: '마개/캡/부속품(플라스틱)', code: '0450', desc: '캡, 펌프 등 플라스틱 부속품' },
-  { label: '튜브/필름(복합재질)', code: '0460', desc: '복합재질 튜브, 알루미늄 튜브' },
+  { label: '튜브/필름(복합재질)', code: '0490', desc: '복합재질 튜브, 복합 펌프' },
+  { label: '튜브/필름(복합재질 - 기존)', code: '0460', desc: '복합재질 튜브 (기존 DB 데이터 호환용)' },
   { label: '유리병(뚜껑일체형)', code: '0210', desc: '앰플, 에센스 유리' },
   { label: '유리병(뚜껑분리형)', code: '0220', desc: '뚜껑 분리 유리' },
-  { label: '일반팩(단상자 등)', code: '0120', desc: '종이 단상자, 2차 포장' },
+  { label: '멸균팩', code: '0130', desc: '알루미늄 첩합 종이팩' },
+  { label: '철캔(일체형)', code: '0310', desc: '에어로졸 등 뚜껑 일체형 철캔' },
+  { label: '철캔(분리형)', code: '0320', desc: '뚜껑 분리형 철캔' },
+  { label: '알루미늄캔(일체형)', code: '0330', desc: '뚜껑 일체형 알루미늄캔' },
+  { label: '알루미늄캔(분리형)', code: '0340', desc: '뚜껑 분리형 알루미늄캔' },
 ];
 
-// ─── 포장재 재질 목록 ───
+// ─── 포장재 재질 목록 (PCTA+PE 등 복합재질 전체 보완) ───
 export const MATERIAL_OPTIONS = [
-  'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC',
+  '종이', '고무', 'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC',
   'Glass (유리병)', 'Aluminium', 'Steel',
   'Paper (단상자/제외)', 'Paper Pack (종이팩)',
   'Film/Sheet (필름/수축비닐)', 'Foam (발포합성수지)',
-  'PP/PE', 'PE/EVA/AL', '기타',
+  'PE+EVOH', 'PCTA+PE', 'PP+PE+GLASS', 'LDPE+HDPE+EVOH+ADMER', 'PP/PE', 'PE/EVA/AL', '기타',
 ];
 
 // ─── 플라스틱/합성수지 재질 목록 (EPR 중량 합산 대상) ───
 export const PLASTIC_MATERIALS = [
-  'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL',
+  'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC', 
+  'PP/PE', 'PE/EVA/AL', 'PE+EVOH', 'PCTA+PE', 'PP+PE+GLASS', 'LDPE+HDPE+EVOH+ADMER',
 ];
 
 // ─── EPR 법령 기준: 재질 그룹별 면제 기준 ───
-// 『자원재활용법 시행령』 별표 4 기준
 export const EPR_MATERIAL_GROUPS = [
   {
     id: 'plastic',
     label: '합성수지류 (플라스틱)',
     shortLabel: '합성수지',
-    materials: ['PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC', 'PP/PE', 'PE/EVA/AL'],
+    materials: [
+      'PET', 'PP', 'PE', 'PCTA', 'PETG', 'SAN', 'ABS', 'PS', 'PVC', 
+      'PP/PE', 'PE/EVA/AL', 'PE+EVOH', 'PCTA+PE', 'PP+PE+GLASS', 'LDPE+HDPE+EVOH+ADMER'
+    ],
     exemptionTonnes: 4,
     color: '#10b981',
     bgColor: '#f0fdf4',
@@ -112,9 +160,8 @@ export const EPR_MATERIAL_GROUPS = [
 ];
 
 // EPR 제외 재질 (중량 합산 안 함)
-export const EPR_EXCLUDED_MATERIALS = ['Paper (단상자/제외)'];
+export const EPR_EXCLUDED_MATERIALS = ['Paper (단상자/제외)', '종이'];
 
-// 편의용: 전체 EPR 대상 재질 목록 (제외 재질 빼고 모두)
 export const GLASS_MATERIALS = ['Glass (유리병)'];
 export const METAL_MATERIALS = ['Aluminium', 'Steel'];
 export const FOAM_MATERIALS = ['Foam (발포합성수지)'];
@@ -128,7 +175,6 @@ export const PACKAGING_CATEGORIES = [
 ];
 
 // ─── 화장품 유형 ───
-// 추후 항목 추가 시 이 배열에만 추가하면 모든 드롭다운에 자동 반영됩니다.
 export const COSMETICS_TYPES = [
   { value: '일반화장품',   label: '일반화장품' },
   { value: '기능성화장품', label: '기능성화장품' },
@@ -146,7 +192,7 @@ export const MFG_TYPES = [
   { value: '수입', label: '수입' },
 ];
 
-// ─── EPR 면제 조건 (레거시 - EprExemptionPanel에서 EPR_MATERIAL_GROUPS로 대체) ───
+// ─── EPR 면제 조건 ───
 export const EPR_EXEMPTION_CONDITIONS = [
   {
     title: '사업장 매출(수입)액 기준 면제',
@@ -188,7 +234,6 @@ export const DEFAULT_EPR_SITES = [
 
 // ─── EPR 엑셀 컬럼 정의 ───
 export const EPR_EXCEL_COLUMNS = {
-  // 필수 (A~F)
   required: [
     { key: 'itemCode', header: '품목코드', col: 'A' },
     { key: 'productName', header: '상품명및규격', col: 'B' },
@@ -197,7 +242,6 @@ export const EPR_EXCEL_COLUMNS = {
     { key: 'unitWeight', header: '개당무게', col: 'E' },
     { key: 'brandType', header: '자사구분', col: 'F' },
   ],
-  // 선택 (G~K) - 대부분 공란
   optional: [
     { key: 'otherCompanyCode', header: '타사업체코드\n(자사구분이 타사일때만 입력)', col: 'G' },
     { key: 'filmType', header: '필름구분\n(품목코드0460일때만 입력)', col: 'H' },
@@ -217,7 +261,6 @@ export const SIDEBAR_MENUS = [
   { id: 'settings', label: '기준 및 계정관리', path: '/settings', icon: 'Settings' },
 ];
 
-// ─── 날짜 포맷 (사양서용) ───
 const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 export function formatDateForSpec(date) {
@@ -228,7 +271,6 @@ export function formatDateForSpec(date) {
   return `${day} ${month} ${year}`;
 }
 
-// ─── ID 생성 유틸 ───
 export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
