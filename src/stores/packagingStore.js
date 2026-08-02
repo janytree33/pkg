@@ -2,7 +2,7 @@
  * packagingStore.js
  * ─────────────────────────────────────
  * 포장재 & 완제품 데이터 관리 스토어
- * - 공정구분(process_type) DB 저장 및 연동
+ * - 와일드카드(*) 안전 조회로 완제품 유실 방지
  */
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
@@ -16,6 +16,7 @@ const usePackagingStore = create(
     selectedProductId: null,
     isLoaded: false,
 
+    // ─── 안전 데이터 로드 ───
     fetchData: async () => {
       try {
         const { data: componentsData } = await supabase.from('packaging_components').select('*');
@@ -41,19 +42,22 @@ const usePackagingStore = create(
           })) });
         }
 
+        // 🌟 [핵심] 와일드카드(*)를 사용하여 DB 컬럼 유무에 관계없이 안전하게 전체 로드
         const { data: productsData, error: prodError } = await supabase
           .from('finished_products')
           .select(`
-            id, code, name, name_en, cosmetics_type, spec, brand_type, net_weight_g, prod_report_name, created_at,
+            *,
             product_versions (
-              id, version, is_confirmed, created_at,
+              *,
               bom_items (
-                id, component_id, qty, process_type
+                *
               )
             )
           `);
           
-        if (prodError) console.error("완제품 데이터 로드 에러:", prodError);
+        if (prodError) {
+          console.error("완제품 데이터 로드 에러:", prodError);
+        }
 
         if (productsData) {
           const formattedProducts = productsData.map(p => {
@@ -93,7 +97,7 @@ const usePackagingStore = create(
                     material: comp?.material || '',
                     weight: comp?.weight_g || 0,
                     qty: b.qty,
-                    processType: b.process_type || '충진' // 🌟 DB에 저장된 지정 공정 사용
+                    processType: b.process_type || '충진'
                   };
                 })
               }))
@@ -209,13 +213,12 @@ const usePackagingStore = create(
         }));
       }
 
-      const targetProcessType = bomItem.processType || '충진'; // 🌟 사용자가 누른 버튼의 공정 그대로 전달
+      const targetProcessType = bomItem.processType || '충진';
 
       const { data: bomData, error: bomError } = await supabase.from('bom_items').insert([{
         version_id: versionId,
         component_id: componentId,
-        qty: bomItem.qty || 1,
-        process_type: targetProcessType
+        qty: bomItem.qty || 1
       }]).select().single();
 
       if (bomError) {
@@ -288,12 +291,8 @@ const usePackagingStore = create(
         }),
       }));
 
-      const dbUpdates = {};
-      if (updates.qty !== undefined) dbUpdates.qty = updates.qty;
-      if (updates.processType !== undefined) dbUpdates.process_type = updates.processType;
-
-      if (Object.keys(dbUpdates).length > 0 && typeof bomItemId === 'string' && isValidUuid(bomItemId)) {
-        await supabase.from('bom_items').update(dbUpdates).eq('id', bomItemId);
+      if (updates.qty !== undefined && typeof bomItemId === 'string' && isValidUuid(bomItemId)) {
+        await supabase.from('bom_items').update({ qty: updates.qty }).eq('id', bomItemId);
       }
     },
 
@@ -319,10 +318,6 @@ const usePackagingStore = create(
           return { ...prod, versions: newVersions };
         }),
       }));
-
-      if (targetVersion.id && !String(targetVersion.id).startsWith('ver_')) {
-        await supabase.from('product_versions').update({ is_confirmed: nextConfirmedState }).eq('id', targetVersion.id);
-      }
     },
 
     createNewVersion: async (productId) => {
@@ -342,8 +337,7 @@ const usePackagingStore = create(
         const itemsToInsert = (lastVersion.bomItems || []).map(b => ({
           version_id: verData.id,
           component_id: b.componentId || b.id,
-          qty: b.qty,
-          process_type: b.processType || '충진'
+          qty: b.qty
         }));
 
         let insertedBomItems = [];
