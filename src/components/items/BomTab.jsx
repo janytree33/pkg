@@ -2,8 +2,7 @@
  * BomTab.jsx
  * ─────────────────────────────────────
  * BOM(부품 구성표) 탭 컴포넌트
- * - 스마트 공정 분류 적용 (단상자, 박스, 라벨 등 자동 포장공정 배치)
- * - BOM 확정/해제 기능
+ * - 사용자가 등록한 공정(충진/포장) 100% 엄격 보존
  */
 import React, { useState } from 'react';
 import usePackagingStore from '../../stores/packagingStore';
@@ -40,26 +39,6 @@ export default function BomTab() {
   const currentVersion = versions[currentVersionIdx];
   const isConfirmed = currentVersion?.isConfirmed || false;
 
-  // 🌟 [스마트 공정 판별 함수] 단상자, 박스, 라벨 등 포장 부자재 자동 감지
-  const getItemProcessType = (item) => {
-    if (item.processType === '포장') return '포장';
-    if (item.processType === '충진') return '충진';
-
-    const comp = packagingComponents.find(c => String(c.id) === String(item.componentId));
-    const searchText = [
-      item.partType,
-      comp?.name,
-      comp?.partType,
-      comp?.containerType,
-      comp?.code
-    ].filter(Boolean).join(' ').toLowerCase();
-
-    const packagingKeywords = ['단상자', '상자', '박스', '카톤', '라벨', '스티커', '테이프', '아웃박스', 'outbox', 'box', 'label', '포장', '설명서', '리플렛'];
-    const isPackaging = packagingKeywords.some(kw => searchText.includes(kw));
-
-    return isPackaging ? '포장' : '충진';
-  };
-
   const handleCreateNewVersion = () => {
     createNewVersion(product.id);
     setSelectedVersionIdx(versions.length);
@@ -86,7 +65,7 @@ export default function BomTab() {
       const realComponentId = comp ? comp.id : id;
 
       const exists = (currentVersion?.bomItems || []).some(
-        item => String(item.componentId) === String(realComponentId) && getItemProcessType(item) === targetProcess
+        item => String(item.componentId) === String(realComponentId) && item.processType === targetProcess
       );
 
       if (!exists) {
@@ -125,22 +104,28 @@ export default function BomTab() {
 
   const totalPlasticWeightByProduction = totalPlasticWeightPerUnit * productionQty;
 
-  // 🌟 스마트 판별 로직 적용
-  const chargingItems = (currentVersion?.bomItems || []).filter(item => getItemProcessType(item) === '충진');
-  const packagingItems = (currentVersion?.bomItems || []).filter(item => getItemProcessType(item) === '포장');
+  // 🌟 [핵심 수정] 대표님이 정하신 공정값을 100% 그대로 반영 (자동 키워드 재분류 완전 제거)
+  const chargingItems = (currentVersion?.bomItems || []).filter(item => (item.processType || '충진') === '충진');
+  const packagingItems = (currentVersion?.bomItems || []).filter(item => item.processType === '포장');
 
   const columns = [
     { label: '선택', render: () => <input type="checkbox" disabled={isConfirmed} className="rounded disabled:opacity-50" /> },
     {
       label: '공정',
       render: (_, row) => {
-        const proc = getItemProcessType(row);
+        const proc = row.processType || '충진';
         return (
-          <span className={`px-2.5 py-1 text-xs font-bold rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 ${
-            proc === '충진' ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-100 text-cyan-700'
-          }`}>
-            {proc}
-          </span>
+          <select
+            value={proc}
+            disabled={isConfirmed}
+            onChange={e => updateBomItem(product.id, currentVersionIdx, row.id, { processType: e.target.value })}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg cursor-pointer border-none focus:ring-2 focus:ring-emerald-300 disabled:opacity-50 ${
+              proc === '충진' ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-100 text-cyan-700'
+            }`}
+          >
+            <option value="충진">충진</option>
+            <option value="포장">포장</option>
+          </select>
         );
       }
     },
