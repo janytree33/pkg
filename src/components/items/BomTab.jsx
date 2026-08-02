@@ -2,7 +2,6 @@
  * BomTab.jsx
  * ─────────────────────────────────────
  * BOM(부품 구성표) 탭 컴포넌트
- * - 사용자가 등록한 공정(충진/포장) 100% 엄격 보존
  */
 import React, { useState } from 'react';
 import usePackagingStore from '../../stores/packagingStore';
@@ -104,7 +103,7 @@ export default function BomTab() {
 
   const totalPlasticWeightByProduction = totalPlasticWeightPerUnit * productionQty;
 
-  // 🌟 [핵심 수정] 대표님이 정하신 공정값을 100% 그대로 반영 (자동 키워드 재분류 완전 제거)
+  // 엄격 공정 분류 (사용자 지정 100% 보존)
   const chargingItems = (currentVersion?.bomItems || []).filter(item => (item.processType || '충진') === '충진');
   const packagingItems = (currentVersion?.bomItems || []).filter(item => item.processType === '포장');
 
@@ -306,7 +305,7 @@ export default function BomTab() {
           <button
             onClick={() => {
               if (isConfirmed) {
-                alert("🔒 이미 확정된 BOM 버전입니다. 수정하려면 [확정 해제] 후 진행해 주세요.");
+                alert("🔒 이미 확정된 BOM 버전입니다.");
                 return;
               }
               setActiveProcessType('충진');
@@ -322,7 +321,7 @@ export default function BomTab() {
           <button
             onClick={() => {
               if (isConfirmed) {
-                alert("🔒 이미 확정된 BOM 버전입니다. 수정하려면 [확정 해제] 후 진행해 주세요.");
+                alert("🔒 이미 확정된 BOM 버전입니다.");
                 return;
               }
               setActiveProcessType('포장');
@@ -372,7 +371,7 @@ export default function BomTab() {
             <DataTable
               columns={columns}
               data={chargingItems}
-              emptyMessage="충진 공정에 등록된 부자재가 없습니다. '[+ 충진부자재 추가]' 버튼을 눌러주세요."
+              emptyMessage="충진 공정에 등록된 부자재가 없습니다."
             />
           </div>
         </div>
@@ -388,7 +387,7 @@ export default function BomTab() {
             <DataTable
               columns={columns}
               data={packagingItems}
-              emptyMessage="포장 공정에 등록된 부자재가 없습니다. '[+ 포장부자재 추가]' 버튼을 눌러주세요."
+              emptyMessage="포장 공정에 등록된 부자재가 없습니다."
             />
           </div>
         </div>

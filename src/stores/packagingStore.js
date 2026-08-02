@@ -1,8 +1,7 @@
 /**
  * packagingStore.js
  * ─────────────────────────────────────
- * 포장재 & 완제품 데이터 관리 스토어
- * - 와일드카드(*) 안전 조회로 완제품 유실 방지
+ * 포장재 & 완제품 데이터 관리 스토어 (이중 방어 로직 적용)
  */
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
@@ -19,30 +18,32 @@ const usePackagingStore = create(
     // ─── 안전 데이터 로드 ───
     fetchData: async () => {
       try {
-        const { data: componentsData } = await supabase.from('packaging_components').select('*');
-        if (componentsData) {
-          set({ packagingComponents: componentsData.map(c => ({
-            id: c.id,
-            regNo: c.reg_no,
-            code: c.code,
-            name: c.name,
-            spec: c.spec,
-            partType: c.part_type || '', 
-            subComponents: c.sub_components || [], 
-            material: c.material,
-            weight: c.weight_g,
-            weightPerUnit: c.weight_g, 
-            containerType: c.container_type,
-            supplier: c.supplier,
-            specFile: c.supplier_spec_doc,
-            specFileData: c.spec_file_data || null,
-            specFileName: c.spec_file_name || null,
-            description: c.notes,
-            createdAt: c.created_at,
-          })) });
-        }
+        const { data: componentsData, error: compErr } = await supabase.from('packaging_components').select('*');
+        if (compErr) console.error("부자재 로드 경고:", compErr);
 
-        // 🌟 [핵심] 와일드카드(*)를 사용하여 DB 컬럼 유무에 관계없이 안전하게 전체 로드
+        const components = (componentsData || []).map(c => ({
+          id: String(c.id),
+          regNo: c.reg_no || '',
+          code: c.code || '',
+          name: c.name || '',
+          spec: c.spec || '',
+          partType: c.part_type || '', 
+          subComponents: c.sub_components || [], 
+          material: c.material || '',
+          weight: c.weight_g || 0,
+          weightPerUnit: c.weight_g || 0, 
+          containerType: c.container_type || '',
+          supplier: c.supplier || '',
+          specFile: c.supplier_spec_doc || '',
+          specFileData: c.spec_file_data || null,
+          specFileName: c.spec_file_name || null,
+          description: c.notes || '',
+          createdAt: c.created_at,
+        }));
+
+        set({ packagingComponents: components });
+
+        // 와일드카드(*) 조회를 통해 DB 스키마 변동에도 100% 안심 로드
         const { data: productsData, error: prodError } = await supabase
           .from('finished_products')
           .select(`
@@ -55,61 +56,69 @@ const usePackagingStore = create(
             )
           `);
           
-        if (prodError) {
-          console.error("완제품 데이터 로드 에러:", prodError);
+        if (prodError) console.error("완제품 로드 경고:", prodError);
+
+        const formattedProducts = (productsData || []).map(p => {
+          const rawVersions = (p.product_versions && p.product_versions.length > 0)
+            ? p.product_versions
+            : [{ id: `ver_${p.id}`, version: '1.0', created_at: p.created_at, bom_items: [] }];
+
+          const sortedVersions = rawVersions.sort((a, b) => parseFloat(a.version || 1.0) - parseFloat(b.version || 1.0));
+          
+          return {
+            id: String(p.id),
+            code: p.code || '',
+            name: p.name || '',
+            nameEn: p.name_en || '',
+            cosmeticsType: p.cosmetics_type || '',
+            spec: p.spec || '',
+            brandType: p.brand_type || '',
+            weight: p.net_weight_g || 0,
+            prodReportName: p.prod_report_name || '',
+            createdAt: p.created_at,
+            versions: sortedVersions.map(v => ({
+              id: String(v.id), 
+              version: v.version || '1.0',
+              isConfirmed: Boolean(v.is_confirmed),
+              createdAt: v.created_at,
+              bomItems: (v.bom_items || []).map(b => {
+                const comp = components.find(c => String(c.id) === String(b.component_id));
+                return {
+                  id: String(b.id), 
+                  componentId: String(b.component_id), 
+                  regNo: comp?.regNo || '',
+                  code: comp?.code || '',
+                  name: comp?.name || '',
+                  spec: comp?.spec || '',
+                  partType: comp?.partType || '', 
+                  subComponents: comp?.subComponents || [], 
+                  material: comp?.material || '',
+                  weight: comp?.weight || 0,
+                  qty: b.qty || 1,
+                  processType: b.process_type || '충진'
+                };
+              })
+            }))
+          };
+        });
+
+        set({ finishedProducts: formattedProducts });
+
+        // 자동 선택 처리 (목록이 있고 현재 선택된 게 없으면 첫 번째 선택)
+        const currentSelected = get().selectedProductId;
+        const exists = formattedProducts.some(p => String(p.id) === String(currentSelected));
+        if ((!currentSelected || !exists) && formattedProducts.length > 0) {
+          set({ selectedProductId: String(formattedProducts[0].id) });
         }
 
-        if (productsData) {
-          const formattedProducts = productsData.map(p => {
-            const rawVersions = (p.product_versions && p.product_versions.length > 0)
-              ? p.product_versions
-              : [{ id: `ver_${p.id}`, version: '1.0', created_at: p.created_at, bom_items: [] }];
-
-            const sortedVersions = rawVersions.sort((a, b) => parseFloat(a.version || 1.0) - parseFloat(b.version || 1.0));
-            
-            return {
-              id: p.id,
-              code: p.code,
-              name: p.name,
-              nameEn: p.name_en,
-              cosmeticsType: p.cosmetics_type,
-              spec: p.spec,
-              brandType: p.brand_type,
-              weight: p.net_weight_g,
-              prodReportName: p.prod_report_name || '',
-              createdAt: p.created_at,
-              versions: sortedVersions.map(v => ({
-                id: v.id, 
-                version: v.version || '1.0',
-                isConfirmed: v.is_confirmed || false,
-                createdAt: v.created_at,
-                bomItems: (v.bom_items || []).map(b => {
-                  const comp = componentsData?.find(c => String(c.id) === String(b.component_id));
-                  return {
-                    id: b.id, 
-                    componentId: b.component_id, 
-                    regNo: comp?.reg_no || '',
-                    code: comp?.code || '',
-                    name: comp?.name || '',
-                    spec: comp?.spec || '',
-                    partType: comp?.part_type || '', 
-                    subComponents: comp?.sub_components || [], 
-                    material: comp?.material || '',
-                    weight: comp?.weight_g || 0,
-                    qty: b.qty,
-                    processType: b.process_type || '충진'
-                  };
-                })
-              }))
-            };
-          });
-          set({ finishedProducts: formattedProducts });
-        }
         set({ isLoaded: true });
       } catch (error) {
-        console.error("Supabase 데이터 로드 예외 발생:", error);
+        console.error("fetchData 예외 처리:", error);
+        set({ isLoaded: true });
       }
     },
+
+    setSelectedProduct: (id) => set({ selectedProductId: id ? String(id) : null }),
 
     addPackagingComponent: async (component) => {
       const { packagingComponents } = get();
@@ -143,13 +152,133 @@ const usePackagingStore = create(
         return null;
       }
       if (data) {
-        const newComponent = { id: data.id, ...component, createdAt: data.created_at };
+        const newComponent = { id: String(data.id), ...component, createdAt: data.created_at };
         set((state) => ({ packagingComponents: [...state.packagingComponents, newComponent] }));
         return newComponent;
       }
       return null;
     },
 
+    updatePackagingComponent: async (id, updates) => {
+      set((state) => ({
+        packagingComponents: state.packagingComponents.map((c) =>
+          String(c.id) === String(id) ? { ...c, ...updates } : c
+        ),
+      }));
+      await supabase.from('packaging_components').update({
+        reg_no: updates.regNo,
+        code: updates.code,
+        name: updates.name,
+        spec: updates.spec,
+        part_type: updates.partType,
+        sub_components: updates.subComponents || [],
+        material: updates.material,
+        container_type: updates.containerType,
+        weight_g: updates.weightPerUnit || updates.weight,
+        supplier: updates.supplier,
+        supplier_spec_doc: updates.specFiles ? JSON.stringify(updates.specFiles) : (updates.specFile || ''),
+        notes: updates.remark || updates.description,
+        updated_at: new Date().toISOString()
+      }).eq('id', id);
+      return true;
+    },
+
+    deletePackagingComponent: async (id) => {
+      set((state) => ({
+        packagingComponents: state.packagingComponents.filter((c) => String(c.id) !== String(id)),
+      }));
+      await supabase.from('packaging_components').delete().eq('id', id);
+    },
+
+    addFinishedProduct: async (product) => {
+      const productPayload = {
+        code: product.code,
+        name: product.name,
+        name_en: product.nameEn || '',
+        cosmetics_type: product.cosmeticsType || '',
+        spec: product.spec || '',
+        brand_type: product.brandType || '',
+        net_weight_g: product.weight || 0,
+        prod_report_name: product.prodReportName || ''
+      };
+      const { data: prodData } = await supabase.from('finished_products').insert([productPayload]).select().single();
+      
+      if (prodData) {
+        const { data: verData } = await supabase.from('product_versions').insert([{
+          product_id: prodData.id,
+          version: '1.0'
+        }]).select().single();
+
+        const newProduct = {
+          id: String(prodData.id),
+          ...product,
+          versions: [{ id: String(verData?.id || `ver_${prodData.id}`), version: '1.0', isConfirmed: false, bomItems: [], createdAt: verData?.created_at }],
+          createdAt: prodData.created_at,
+        };
+        set((state) => ({ finishedProducts: [...state.finishedProducts, newProduct] }));
+        return newProduct;
+      }
+      return null;
+    },
+
+    updateFinishedProduct: async (id, updates) => {
+      set((state) => ({
+        finishedProducts: state.finishedProducts.map((p) => String(p.id) === String(id) ? { ...p, ...updates } : p),
+      }));
+      await supabase.from('finished_products').update({
+        code: updates.code,
+        name: updates.name,
+        name_en: updates.nameEn,
+        cosmetics_type: updates.cosmeticsType,
+        spec: updates.spec,
+        brand_type: updates.brandType,
+        net_weight_g: updates.weight,
+        prod_report_name: updates.prodReportName,
+        updated_at: new Date().toISOString()
+      }).eq('id', id);
+    },
+
+    uploadProductsFromExcel: async (products) => {
+      const payload = products.map(p => ({
+        code: p.code, name: p.name, name_en: p.nameEn || '', cosmetics_type: p.cosmeticsType || '',
+        spec: p.spec || '', brand_type: p.brandType || '자사', net_weight_g: p.weight || 0, prod_report_name: p.prodReportName || ''
+      }));
+
+      const { data, error } = await supabase.from('finished_products').insert(payload).select();
+      if (data && !error) {
+        const versionsPayload = data.map(d => ({ product_id: d.id, version: '1.0' }));
+        await supabase.from('product_versions').insert(versionsPayload);
+        await get().fetchData();
+        return true;
+      }
+      return false;
+    },
+
+    uploadComponentsFromExcel: async (components) => {
+      const payload = components.map(c => ({
+        reg_no: c.regNo || '', code: c.code, name: c.name, spec: c.spec || '',
+        part_type: c.partType || '기타', sub_components: c.subComponents || [], material: c.material || '',
+        container_type: c.containerType || c.container_type || '',
+        weight_g: c.weightPerUnit || c.weight || 0, notes: c.remark || '',
+      }));
+
+      const { data, error } = await supabase.from('packaging_components').insert(payload).select();
+      if (data && !error) {
+        await get().fetchData();
+        return true;
+      }
+      return false;
+    },
+
+    deleteFinishedProduct: async (id) => {
+      set((state) => ({
+        finishedProducts: state.finishedProducts.filter((p) => String(p.id) !== String(id)),
+        selectedProductId: String(state.selectedProductId) === String(id) ? null : state.selectedProductId,
+      }));
+      await supabase.from('finished_products').delete().eq('id', id);
+    },
+
+    // ─── [핵심 방어] BOM 아이템 추가 ───
     addBomItem: async (productId, versionIndex, bomItem) => {
       const products = get().finishedProducts;
       let p = products.find(prod => String(prod.id) === String(productId));
@@ -166,11 +295,11 @@ const usePackagingStore = create(
         }]).select().single();
 
         if (verError || !verData) {
-          alert("DB에 버전을 생성하지 못했습니다.");
+          alert("DB 버전을 생성하지 못했습니다.");
           return;
         }
 
-        targetVersion = { id: verData.id, version: verData.version, isConfirmed: false, createdAt: verData.created_at, bomItems: targetVersion?.bomItems || [] };
+        targetVersion = { id: String(verData.id), version: verData.version, isConfirmed: false, createdAt: verData.created_at, bomItems: targetVersion?.bomItems || [] };
         if (versions.length === 0) versions = [targetVersion];
         else versions[safeIndex] = targetVersion;
         p.versions = versions;
@@ -186,6 +315,7 @@ const usePackagingStore = create(
       const components = get().packagingComponents;
       let comp = components.find(c => String(c.id) === String(componentId));
 
+      // UUID가 아닌 경우 DB 동기화
       if (!isValidUuid(componentId)) {
         const payload = {
           reg_no: comp?.regNo || '',
@@ -205,29 +335,36 @@ const usePackagingStore = create(
           alert("부자재 DB 동기화 오류: " + newCompErr?.message);
           return;
         }
-        componentId = newCompData.id;
+        componentId = String(newCompData.id);
         set((state) => ({
           packagingComponents: state.packagingComponents.map(c => 
-            String(c.id) === String(bomItem.componentId || bomItem.id) ? { ...c, id: newCompData.id } : c
+            String(c.id) === String(bomItem.componentId || bomItem.id) ? { ...c, id: String(newCompData.id) } : c
           )
         }));
       }
 
       const targetProcessType = bomItem.processType || '충진';
 
-      const { data: bomData, error: bomError } = await supabase.from('bom_items').insert([{
-        version_id: versionId,
-        component_id: componentId,
-        qty: bomItem.qty || 1
-      }]).select().single();
+      // 🌟 [안전 DB 저장] process_type 컬럼이 있든 없든 튕기지 않고 처리
+      let bomData = null;
+      const primaryPayload = { version_id: versionId, component_id: componentId, qty: bomItem.qty || 1, process_type: targetProcessType };
+      const { data: res1Data, error: res1Err } = await supabase.from('bom_items').insert([primaryPayload]).select().single();
 
-      if (bomError) {
-        alert("DB에 BOM 항목을 저장하지 못했습니다: " + bomError.message);
-        return;
+      if (res1Err) {
+        // process_type 컬럼이 없을 경우를 대비한 자동 Fallback
+        const fallbackPayload = { version_id: versionId, component_id: componentId, qty: bomItem.qty || 1 };
+        const { data: res2Data, error: res2Err } = await supabase.from('bom_items').insert([fallbackPayload]).select().single();
+        if (res2Err) {
+          alert("DB에 BOM 항목을 저장하지 못했습니다: " + res2Err.message);
+          return;
+        }
+        bomData = res2Data;
+      } else {
+        bomData = res1Data;
       }
 
       const newBomItem = {
-        id: bomData.id,
+        id: String(bomData.id),
         componentId: componentId,
         regNo: comp?.regNo || comp?.reg_no || '',
         code: comp?.code || '',
@@ -291,8 +428,13 @@ const usePackagingStore = create(
         }),
       }));
 
-      if (updates.qty !== undefined && typeof bomItemId === 'string' && isValidUuid(bomItemId)) {
-        await supabase.from('bom_items').update({ qty: updates.qty }).eq('id', bomItemId);
+      if (typeof bomItemId === 'string' && isValidUuid(bomItemId)) {
+        if (updates.qty !== undefined) {
+          await supabase.from('bom_items').update({ qty: updates.qty }).eq('id', bomItemId);
+        }
+        if (updates.processType !== undefined) {
+          await supabase.from('bom_items').update({ process_type: updates.processType }).eq('id', bomItemId);
+        }
       }
     },
 
@@ -307,6 +449,7 @@ const usePackagingStore = create(
 
       const nextConfirmedState = !targetVersion.isConfirmed;
 
+      // 화면 즉각 업데이트
       set((state) => ({
         finishedProducts: state.finishedProducts.map((prod) => {
           if (String(prod.id) !== String(productId)) return prod;
@@ -318,6 +461,10 @@ const usePackagingStore = create(
           return { ...prod, versions: newVersions };
         }),
       }));
+
+      if (targetVersion.id && !String(targetVersion.id).startsWith('ver_')) {
+        await supabase.from('product_versions').update({ is_confirmed: nextConfirmedState }).eq('id', targetVersion.id);
+      }
     },
 
     createNewVersion: async (productId) => {
@@ -350,13 +497,13 @@ const usePackagingStore = create(
           finishedProducts: state.finishedProducts.map((prod) => {
             if (String(prod.id) !== String(productId)) return prod;
             const newVersion = {
-              id: verData.id,
+              id: String(verData.id),
               version: nextVerString,
               isConfirmed: false,
               createdAt: verData.created_at,
               bomItems: (lastVersion.bomItems || []).map((b, idx) => ({
                 ...b,
-                id: insertedBomItems[idx]?.id || b.id,
+                id: insertedBomItems[idx] ? String(insertedBomItems[idx].id) : b.id,
               })),
             };
             return { ...prod, versions: [...prod.versions, newVersion] };
@@ -382,6 +529,7 @@ const usePackagingStore = create(
 
     getSelectedProduct: () => {
       const { finishedProducts, selectedProductId } = get();
+      if (!selectedProductId) return null;
       return finishedProducts.find((p) => String(p.id) === String(selectedProductId)) || null;
     },
   })
