@@ -54,6 +54,8 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
   const { companyInfo } = useSettingsStore();
   const { packagingComponents } = usePackagingStore();
 
+  const isKo = docLanguage === 'ko';
+
   // 선택된 제품 정보가 없다면 화면을 그리지 않습니다.
   if (!product) return null;
 
@@ -232,8 +234,6 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
 
     let rows = [];
     let globalNo = 1;
-
-    const isKo = docLanguage === 'ko';
     
     // 개별 행 생성 함수
     const createRow = ({ bItem, comp }, idx, groupName) => {
@@ -303,8 +303,6 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
    * renderMaterialSection — 하나의 재질 그룹을 완전한 섹션(타이틀 + 테이블 + 합계)으로 렌더링합니다.
    * 해당 그룹에 아이템이 없으면 아무것도 렌더링하지 않습니다(null 반환).
    */
-  const isKo = docLanguage === 'ko';
-
   const renderMaterialSection = (groupId, items) => {
     if (!items || items.length === 0) return null;
 
