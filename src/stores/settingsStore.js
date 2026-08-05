@@ -2,11 +2,10 @@
  * settingsStore.js
  * ─────────────────────────────────────
  * 기준관리 & 계정 관리 스토어
- * 회사 정보, EPR 사이트 계정, 포장형태, 테마 설정 관리
+ * 영문 직인(stampEn) 항목 추가 완료!
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-// 방금 우리가 만든 DEFAULT_PART_TYPES도 불러옵니다.
 import { generateId, DEFAULT_EPR_SITES, DEFAULT_PART_TYPES } from '../utils/constants';
 import { encrypt, decrypt } from '../utils/encryption';
 import { supabase } from '../lib/supabase';
@@ -25,8 +24,45 @@ const useSettingsStore = create(
         fax: '02.868.1920',
         email: 'global@janytree.com',
         ceoName: '',
-        logo: null,    // Base64 이미지 데이터
-        stamp: null,   // Base64 이미지 데이터
+        logo: null,       // Supabase Storage Public URL
+        stamp: null,      // 국문 직인 URL
+        stampEn: null,    // 💡 [추가] 영문 직인 URL
+      },
+
+      // ─── 회사 로고/직인 스토리지 업로드 ───
+      uploadCompanyImage: async (file, type) => {
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${type}_${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('company_assets')
+            .upload(fileName, file, { upsert: true });
+
+          if (uploadError) {
+            console.error("스토리지 업로드 에러:", uploadError);
+            throw uploadError;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('company_assets')
+            .getPublicUrl(fileName);
+
+          // 💡 영문 직인(stampEn) 대응 로직 반영
+          if (type === 'logo') {
+            await get().updateCompanyInfo({ logo: publicUrl });
+          } else if (type === 'stamp') {
+            await get().updateCompanyInfo({ stamp: publicUrl });
+          } else if (type === 'stampEn') {
+            await get().updateCompanyInfo({ stampEn: publicUrl });
+          }
+
+          return publicUrl;
+        } catch (error) {
+          console.error("이미지 처리 중 에러 발생:", error);
+          alert("이미지 업로드 중 오류가 발생했습니다.");
+          return null;
+        }
       },
 
       // ─── EPR 관련 사이트 계정 ───
@@ -34,28 +70,24 @@ const useSettingsStore = create(
         id: generateId(),
         ...site,
         loginId: '',
-        password: '',  // AES 암호화된 상태로 저장
+        password: '',
       })),
 
-      // ─── 포장형태 관리 (새로 추가됨) ───
-      // constants.js의 12개 기본값을 초기값으로 넣어줍니다.
+      // ─── 포장형태 관리 ───
       packagingTypes: DEFAULT_PART_TYPES.map(name => ({
         id: generateId(),
         name: name,
         createdAt: new Date().toISOString()
       })),
       
-      // 새 포장형태를 추가하는 마법 주문
       addPackagingType: (name) => set((state) => ({
         packagingTypes: [...state.packagingTypes, { id: generateId(), name, createdAt: new Date().toISOString() }]
       })),
       
-      // 기존 포장형태의 이름을 바꾸는 마법 주문
       updatePackagingType: (id, name) => set((state) => ({
         packagingTypes: state.packagingTypes.map(pt => pt.id === id ? { ...pt, name } : pt)
       })),
       
-      // 안쓰는 포장형태를 삭제하는 마법 주문
       deletePackagingType: (id) => set((state) => ({
         packagingTypes: state.packagingTypes.filter(pt => pt.id !== id)
       })),
@@ -69,8 +101,7 @@ const useSettingsStore = create(
       // ─── 데이터 초기 로드 (Supabase) ───
       fetchData: async () => {
         try {
-          // 회사 정보 로드 (단일 로우 가정)
-          const { data: companyData, error: companyError } = await supabase
+          const { data: companyData } = await supabase
             .from('company_info')
             .select('*')
             .limit(1)
@@ -90,10 +121,10 @@ const useSettingsStore = create(
               email: companyData.email,
               logo: companyData.logo,
               stamp: companyData.stamp,
+              stampEn: companyData.stamp_en || null, // 💡 [추가] 영문 직인 불러오기
             } });
           }
 
-          // 연동 계정 로드
           const { data: accountsData } = await supabase
             .from('accounts')
             .select('*');
@@ -118,7 +149,6 @@ const useSettingsStore = create(
 
       // ─── 회사 정보 업데이트 (Supabase 동기화) ───
       updateCompanyInfo: async (updates) => {
-        // 로컬 상태 즉시 업데이트 (Optimistic Update)
         set((state) => ({
           companyInfo: { ...state.companyInfo, ...updates },
         }));
@@ -136,11 +166,11 @@ const useSettingsStore = create(
           email: companyInfo.email,
           logo: companyInfo.logo,
           stamp: companyInfo.stamp,
+          stamp_en: companyInfo.stampEn, // 💡 [추가] DB에 영문 직인 필드 저장
           updated_at: new Date().toISOString()
         };
 
         if (companyInfo.id) {
-          // 기존 정보 수정
           const { error } = await supabase.from('company_info').update(payload).eq('id', companyInfo.id);
           if (error) {
             console.error("Update Error:", error);
@@ -149,7 +179,6 @@ const useSettingsStore = create(
             alert("회사 정보가 성공적으로 저장되었습니다.");
           }
         } else {
-          // 새 정보 등록
           const { data, error } = await supabase.from('company_info').insert([payload]).select().single();
           if (error) {
             console.error("Insert Error:", error);
@@ -162,11 +191,9 @@ const useSettingsStore = create(
         }
       },
 
-      // ─── 테마 토글 ───
       toggleTheme: () => {
         set((state) => {
           const newTheme = state.theme === 'light' ? 'dark' : 'light';
-          // HTML에 dark 클래스 적용
           if (newTheme === 'dark') {
             document.documentElement.classList.add('dark');
           } else {
@@ -176,7 +203,6 @@ const useSettingsStore = create(
         });
       },
 
-      // ─── 테마 초기화 (앱 로드 시) ───
       initTheme: () => {
         const { theme } = get();
         if (theme === 'dark') {
@@ -186,7 +212,6 @@ const useSettingsStore = create(
         }
       },
 
-      // ─── 계정 추가 (Supabase 동기화) ───
       addEprAccount: async (account) => {
         const encryptedPassword = account.password ? encrypt(account.password) : '';
         const payload = {
@@ -212,7 +237,6 @@ const useSettingsStore = create(
         }
       },
 
-      // ─── 계정 수정 (Supabase 동기화) ───
       updateEprAccount: async (id, updates) => {
         let encryptedPassword = updates.password;
         
@@ -243,7 +267,6 @@ const useSettingsStore = create(
         }
       },
 
-      // ─── 계정 삭제 (Supabase 동기화) ───
       deleteEprAccount: async (id) => {
         set((state) => ({
           eprAccounts: state.eprAccounts.filter((a) => a.id !== id),
@@ -251,7 +274,6 @@ const useSettingsStore = create(
         await supabase.from('accounts').delete().eq('id', id);
       },
 
-      // ─── 비밀번호 복호화 조회 ───
       getDecryptedPassword: (id) => {
         const account = get().eprAccounts.find((a) => a.id === id);
         if (!account) return '';
@@ -259,7 +281,7 @@ const useSettingsStore = create(
       },
     }),
     {
-      name: 'janytree-settings-store', // 이 이름으로 브라우저에 저장됩니다.
+      name: 'janytree-settings-store',
     }
   )
 );
