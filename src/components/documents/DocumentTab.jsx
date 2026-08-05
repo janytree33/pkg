@@ -10,7 +10,7 @@ import { generateId } from '../../utils/constants';
  */
 const DocumentTab = ({ product }) => {
   // 문서 관리 스토어에서 기록 추가(addDocument) 및 조회(getDocumentsForProduct) 기능을 가져옵니다.
-  const { addDocument, getDocumentsForProduct, showEvalResult, setShowEvalResult } = useDocumentStore();
+  const { addDocument, getDocumentsForProduct, showEvalResult, setShowEvalResult, showFinalGrade, setShowFinalGrade, docLanguage, setDocLanguage } = useDocumentStore();
   
   // 사용자가 폼에서 입력하는 값들을 저장하는 상태(State) 변수들입니다.
   const [versionIndex, setVersionIndex] = useState(0); // 선택한 제품 버전의 인덱스
@@ -152,21 +152,46 @@ const DocumentTab = ({ product }) => {
         </div>
 
         {/* 옵션 선택 영역 */}
-        <div className="mb-6 flex items-center">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-400"
-              checked={showEvalResult}
-              onChange={(e) => setShowEvalResult(e.target.checked)}
-            />
-            <span className="ml-2 text-sm font-medium text-gray-800">
-              [재질·구조 평가 결과 표기]
-            </span>
-          </label>
-          <span className="ml-3 text-xs text-gray-500">
-            (체크 시 출력물에 재질·구조 평가 관련 항목과 최종 등급이 반영됩니다)
-          </span>
+        <div className="mb-6 bg-gray-50 p-4 rounded-md border border-gray-200">
+          <h3 className="text-sm font-bold text-gray-700 mb-3 border-b border-gray-200 pb-2">사양서 출력 옵션 설정</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">언어 선택 (국문 / 영문)</label>
+              <select
+                className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
+                value={docLanguage}
+                onChange={(e) => setDocLanguage(e.target.value)}
+              >
+                <option value="ko">국문 (Korean)</option>
+                <option value="en">영문 (English)</option>
+              </select>
+            </div>
+            
+            <div className="flex flex-col justify-center gap-2 mt-1 md:col-span-2">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-400"
+                  checked={showFinalGrade}
+                  onChange={(e) => setShowFinalGrade(e.target.checked)}
+                />
+                <span className="ml-2 text-sm font-medium text-gray-800">
+                  [완제품 최종 등급 표기] (상단 요약란)
+                </span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-400"
+                  checked={showEvalResult}
+                  onChange={(e) => setShowEvalResult(e.target.checked)}
+                />
+                <span className="ml-2 text-sm font-medium text-gray-800">
+                  [개별 부자재 평가결과 표기] (표 내부 항목)
+                </span>
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* 2. 실행 버튼 영역 (미리보기, PDF, 인쇄) */}
@@ -208,6 +233,8 @@ const DocumentTab = ({ product }) => {
               remark={remark}
               issueDate={issueDate}
               showEvalResult={showEvalResult}
+              showFinalGrade={showFinalGrade}
+              docLanguage={docLanguage}
             />
           </div>
         </div>
@@ -224,6 +251,8 @@ const DocumentTab = ({ product }) => {
             remark={remark}
             issueDate={issueDate}
             showEvalResult={showEvalResult}
+            showFinalGrade={showFinalGrade}
+            docLanguage={docLanguage}
           />
         </div>
       )}

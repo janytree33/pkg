@@ -14,8 +14,8 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     name: '',
     spec: '',
     partType: DEFAULT_PART_TYPES[0], 
-    containerType: '',
     material: '',
+    materialEvalResult: '미평가',
     weightPerUnit: '',
     remark: '',
     subComponents: [], 
@@ -53,9 +53,9 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         name: editData.name || '',
         spec: editData.spec || '',
         partType: editData.partType || DEFAULT_PART_TYPES[0],
-        // ✅ 불러올 때 코드가 섞여 있어도 라벨로 강제 변환
         containerType: getContainerLabel(editData.containerType),
         material: editData.material || '',
+        materialEvalResult: editData.materialEvalResult || '미평가',
         weightPerUnit: editData.weightPerUnit || editData.weight || '',
         remark: editData.remark || '',
         // ✅ 서브컴포넌트도 동일하게 라벨로 변환 적용
@@ -75,6 +75,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         partType: DEFAULT_PART_TYPES[0],
         containerType: '',
         material: '',
+        materialEvalResult: '미평가',
         weightPerUnit: '',
         remark: '',
         subComponents: [],
@@ -249,8 +250,20 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             </select>
           </div>
           
-          {/* 그리드 정렬을 맞추기 위한 빈 공간 (선택사항) */}
-          <div className="hidden md:block"></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">재질·구조 평가 결과</label>
+            <select 
+              value={formData.materialEvalResult} 
+              onChange={e => setFormData({...formData, materialEvalResult: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="미평가">미평가</option>
+              <option value="재활용 최우수">재활용 최우수</option>
+              <option value="재활용 우수">재활용 우수</option>
+              <option value="재활용 보통">재활용 보통</option>
+              <option value="재활용 어려움">재활용 어려움</option>
+            </select>
+          </div>
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">총 개당 중량(g)</label>

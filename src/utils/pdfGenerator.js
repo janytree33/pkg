@@ -1,5 +1,6 @@
 // src/utils/pdfGenerator.js
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 /**
  * 주어진 HTML 요소를 A4 크기의 PDF로 변환하여 다운로드하는 함수입니다.
@@ -7,17 +8,42 @@ import html2pdf from 'html2pdf.js';
  * @param {string} filename - 다운로드될 PDF 파일의 이름 (기본값: 'packaging-specification.pdf')
  */
 export const generatePdf = async (element, filename = 'packaging-specification.pdf') => {
-  // pdf 생성 옵션 설정 (내부 컴포넌트에서 이미 padding을 주었으므로 여백은 0으로 설정)
-  const opt = {
-    margin:       0,
-    filename:     filename,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true }, 
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+  try {
+    // 1. html2canvas로 화면 캡처
+    const canvas = await html2canvas(element, {
+      scale: 2,           // 해상도 2배로 선명하게
+      useCORS: true,      // 외부 이미지(로고, 도장 등) CORS 허용
+      logging: false,
+    });
 
-  // html2pdf 라이브러리를 통해 화면 요소를 캡처하고 PDF로 저장합니다.
-  await html2pdf().set(opt).from(element).save();
+    // 2. 캡처된 canvas를 이미지 데이터로 변환
+    const imgData = canvas.toDataURL('image/png');
+
+    // 3. jsPDF 인스턴스 생성 (A4 세로 기준)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    // 4. A4 용지 크기에 맞게 이미지 삽입
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    // 비율을 유지하며 가로 길이를 꽉 채우고 세로는 내용만큼 잡기
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // 만약 내용이 A4 세로보다 길어지면 페이지가 넘어갈 수도 있지만 
+    // 사양서는 보통 1페이지 이내로 설계됨.
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+    // 5. PDF 파일 저장
+    pdf.save(filename);
+  } catch (error) {
+    console.error("PDF 생성 중 에러 발생:", error);
+    alert("PDF 다운로드 중 오류가 발생했습니다.");
+  }
 };
 
 /**
