@@ -2,7 +2,7 @@
  * CompanyInfoForm.jsx
  * ─────────────────────────────────────
  * 회사 정보 설정 화면 ⭐
- * 영문 직인(stampEn) 업로드 및 미리보기 카드 추가 완료!
+ * 로고 및 직인(국문/영문) 비율 최적화 완료!
  */
 import { useState, useRef } from 'react';
 import { Save, Upload, Trash2, Building2, Image } from 'lucide-react';
@@ -39,7 +39,7 @@ const ImageUploadArea = ({ label, field, inputRef, description, form, handleImag
       <div className="w-full h-28 rounded-lg border-2 border-dashed border-slate-300  
                       flex items-center justify-center bg-slate-50 overflow-hidden">
         {form[field] ? (
-          <img src={form[field]} alt={label} className="max-w-full max-h-full object-contain p-2" />
+          <img src={form[field]} alt={label} className="max-w-full max-h-full object-contain p-1" />
         ) : (
           <div className="text-center text-slate-400">
             <Image size={24} className="mx-auto mb-1" />
@@ -92,7 +92,7 @@ export default function CompanyInfoForm() {
 
   const logoInputRef = useRef(null);
   const stampInputRef = useRef(null);
-  const stampEnInputRef = useRef(null); // 💡 [추가] 영문 직인용 Ref
+  const stampEnInputRef = useRef(null);
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -156,7 +156,7 @@ export default function CompanyInfoForm() {
           </div>
         </div>
 
-        {/* 이미지 업로드 카드 (3컬럼 구조로 확충!) */}
+        {/* 이미지 업로드 카드 (3컬럼 구조) */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-card">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Image size={20} className="text-brand-500" />
@@ -183,7 +183,6 @@ export default function CompanyInfoForm() {
               handleImageDelete={handleImageDelete}
               isUploading={uploadingField === 'stamp'}
             />
-            {/* 💡 [추가된 영문 직인 업로드 영역] */}
             <ImageUploadArea
               label="공식 직인 (영문)"
               field="stampEn"
@@ -221,13 +220,13 @@ export default function CompanyInfoForm() {
           <h3 className="text-sm font-semibold text-slate-500 mb-4 uppercase tracking-wider">
             미리보기
           </h3>
-          {/* 로고 미리보기 */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+          {/* 로고 미리보기 (크기 및 비율 최적화) */}
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700 min-h-[48px]">
             <span className="text-lg font-bold text-slate-900 dark:text-white">
               {form.nameEn || 'JANYTREE'}
             </span>
             {form.logo ? (
-              <img src={form.logo} alt="Logo" className="h-8 object-contain" />
+              <img src={form.logo} alt="Logo" className="max-h-12 max-w-[150px] object-contain" />
             ) : (
               <span className="text-xs text-slate-400 border border-dashed border-slate-300 px-2 py-1 rounded">
                 LOGO
@@ -249,19 +248,19 @@ export default function CompanyInfoForm() {
             {form.ceoName && <p>대표자: {form.ceoName}</p>}
           </div>
           
-          {/* 직인 미리보기 (국문 / 영문 나란히 표시) */}
+          {/* 직인 미리보기 (국문/영문 개별 수직 배치로 크기 확보) */}
           {(form.stamp || form.stampEn) && (
-            <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
               {form.stamp && (
-                <div className="text-center">
-                  <span className="text-[10px] text-slate-400 block mb-0.5">국문</span>
-                  <img src={form.stamp} alt="국문직인" className="h-14 object-contain opacity-80" />
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-medium text-slate-400 mb-1">국문 직인</span>
+                  <img src={form.stamp} alt="국문직인" className="max-h-20 max-w-full object-contain opacity-90" />
                 </div>
               )}
               {form.stampEn && (
-                <div className="text-center">
-                  <span className="text-[10px] text-slate-400 block mb-0.5">영문</span>
-                  <img src={form.stampEn} alt="영문직인" className="h-14 object-contain opacity-80" />
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-medium text-slate-400 mb-1">영문 직인</span>
+                  <img src={form.stampEn} alt="영문직인" className="max-h-20 max-w-full object-contain opacity-90" />
                 </div>
               )}
             </div>
