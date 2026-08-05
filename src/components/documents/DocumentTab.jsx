@@ -10,7 +10,7 @@ import { generateId } from '../../utils/constants';
  */
 const DocumentTab = ({ product }) => {
   // 문서 관리 스토어에서 기록 추가(addDocument) 및 조회(getDocumentsForProduct) 기능을 가져옵니다.
-  const { addDocument, getDocumentsForProduct } = useDocumentStore();
+  const { addDocument, getDocumentsForProduct, showEvalResult, setShowEvalResult } = useDocumentStore();
   
   // 사용자가 폼에서 입력하는 값들을 저장하는 상태(State) 변수들입니다.
   const [versionIndex, setVersionIndex] = useState(0); // 선택한 제품 버전의 인덱스
@@ -151,6 +151,24 @@ const DocumentTab = ({ product }) => {
           </div>
         </div>
 
+        {/* 옵션 선택 영역 */}
+        <div className="mb-6 flex items-center">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-400"
+              checked={showEvalResult}
+              onChange={(e) => setShowEvalResult(e.target.checked)}
+            />
+            <span className="ml-2 text-sm font-medium text-gray-800">
+              [재질·구조 평가 결과 표기]
+            </span>
+          </label>
+          <span className="ml-3 text-xs text-gray-500">
+            (체크 시 출력물에 재질·구조 평가 관련 항목과 최종 등급이 반영됩니다)
+          </span>
+        </div>
+
         {/* 2. 실행 버튼 영역 (미리보기, PDF, 인쇄) */}
         <div className="flex space-x-3">
           <button
@@ -189,6 +207,7 @@ const DocumentTab = ({ product }) => {
               certNo={certNo}
               remark={remark}
               issueDate={issueDate}
+              showEvalResult={showEvalResult}
             />
           </div>
         </div>
@@ -204,6 +223,7 @@ const DocumentTab = ({ product }) => {
             certNo={certNo}
             remark={remark}
             issueDate={issueDate}
+            showEvalResult={showEvalResult}
           />
         </div>
       )}

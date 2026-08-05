@@ -32,7 +32,7 @@ const SECTION_CONFIG = {
   foam:      { title: 'TARGET — FOAM (발포합성수지)',           totalLabel: 'TOTAL FOAM WEIGHT',        borderColor: '#8b5cf6' },
 };
 
-const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark, issueDate }, ref) => {
+const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark, issueDate, showEvalResult }, ref) => {
   // ─── 스토어에서 회사 정보와 포장재 마스터 데이터를 불러옵니다 ───
   const { companyInfo } = useSettingsStore();
   const { packagingComponents } = usePackagingStore();
@@ -145,6 +145,49 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     return { groupedItems: grouped, exemptItems: exempt };
   }, [version.bomItems, packagingComponents]);
 
+  // ─── 완제품 최종 재활용 등급 산출 로직 ───
+  const getGradeRank = (grade) => {
+    if (!grade || grade.includes('미평가')) return 99;
+    if (grade.includes('최우수')) return 1;
+    if (grade.includes('우수')) return 2;
+    if (grade.includes('보통') || grade.includes('용이')) return 3;
+    if (grade.includes('어려움')) return 4;
+    return 99;
+  };
+
+  const calculateFinalGrade = () => {
+    if (!version?.bomItems || version.bomItems.length === 0) return '-';
+    
+    let maxRank = 0;
+    let hasUnevaluated = false;
+
+    for (const item of version.bomItems) {
+      const comp = packagingComponents.find(c => String(c.id) === String(item.componentId || item.component_id));
+      const grade = comp?.materialEvalResult || '미평가';
+      
+      if (grade.includes('미평가')) {
+        hasUnevaluated = true;
+        break;
+      }
+      
+      const rank = getGradeRank(grade);
+      if (rank > maxRank) maxRank = rank;
+    }
+
+    if (hasUnevaluated) return '평가 진행중(미평가)';
+    
+    switch(maxRank) {
+      case 1: return '최우수 (Best)';
+      case 2: return '우수 (Excellent)';
+      case 3: return '보통 (Normal)';
+      case 4: return '어려움 (Difficult)';
+      default: return '평가 진행중(미평가)';
+    }
+  };
+
+  const finalGrade = showEvalResult ? calculateFinalGrade() : null;
+
+
   /**
    * calculateGroupTotal — 특정 아이템 배열의 총 중량(g)을 계산합니다.
    * 계산식: Σ (개당중량 × BOM 수량)
@@ -183,6 +226,7 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
           <td style={{ padding: '5px 4px', textAlign: 'center', color: '#6b7280', fontSize: '10px' }}>{globalNo++}</td>
           <td style={{ padding: '5px 4px', fontWeight: '500', wordBreak: 'break-all', fontSize: '10px' }}>{comp.name}</td>
           <td style={{ padding: '5px 4px', color: '#4b5563', wordBreak: 'break-all', fontSize: '10px' }}>{comp.material || '-'}</td>
+          {showEvalResult && <td style={{ padding: '5px 4px', color: '#3b82f6', fontWeight: '600', wordBreak: 'break-all', fontSize: '10px' }}>{comp.materialEvalResult || '미평가'}</td>}
           <td style={{ padding: '5px 4px', color: '#6b7280', wordBreak: 'break-all', fontSize: '10px' }}>{comp.code || '-'}</td>
           <td style={{ padding: '5px 4px', color: '#6b7280', wordBreak: 'break-all', fontSize: '10px' }}>{comp.remark || comp.description || '-'}</td>
           <td style={{ padding: '5px 4px', textAlign: 'right', fontSize: '10px' }}>{weight.toFixed(6)}</td>
@@ -196,7 +240,7 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     if (filling.length > 0) {
       rows.push(
         <tr key={`${prefixKey}-hdr-fill`} style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-          <td colSpan="8" style={{ padding: '4px 12px', fontWeight: 'bold', color: '#374151', fontSize: '10px', letterSpacing: '0.5px' }}>
+          <td colSpan={showEvalResult ? "9" : "8"} style={{ padding: '4px 12px', fontWeight: 'bold', color: '#374151', fontSize: '10px', letterSpacing: '0.5px' }}>
             [ 충진 부자재 ]
           </td>
         </tr>
@@ -208,7 +252,7 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     if (packaging.length > 0) {
       rows.push(
         <tr key={`${prefixKey}-hdr-pkg`} style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-          <td colSpan="8" style={{ padding: '4px 12px', fontWeight: 'bold', color: '#374151', fontSize: '10px', letterSpacing: '0.5px' }}>
+          <td colSpan={showEvalResult ? "9" : "8"} style={{ padding: '4px 12px', fontWeight: 'bold', color: '#374151', fontSize: '10px', letterSpacing: '0.5px' }}>
             [ 포장 부자재 ]
           </td>
         </tr>
@@ -220,7 +264,7 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     if (rows.length === 0) {
       rows.push(
         <tr key={`${prefixKey}-empty`}>
-          <td colSpan="8" style={{ padding: '14px 8px', textAlign: 'center', color: '#9ca3af', borderBottom: '1px solid #e5e7eb', fontSize: '10px' }}>
+          <td colSpan={showEvalResult ? "9" : "8"} style={{ padding: '14px 8px', textAlign: 'center', color: '#9ca3af', borderBottom: '1px solid #e5e7eb', fontSize: '10px' }}>
             해당 부품이 없습니다.
           </td>
         </tr>
@@ -259,22 +303,36 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
         {/* 데이터 테이블 */}
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', tableLayout: 'fixed' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'center', width: '5%' }}>No</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '22%' }}>Component Name</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '15%' }}>Material</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '13%' }}>ERP Code</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '15%' }}>Remark</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'right', width: '11%' }}>Weight(g)</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'center', width: '7%' }}>Qty</th>
-              <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'right', width: '12%' }}>Total(g)</th>
-            </tr>
+            {showEvalResult ? (
+              <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'center', width: '4%' }}>No</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '18%' }}>Component Name</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '13%' }}>Material</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#3b82f6', textAlign: 'left', width: '12%' }}>Recyclability Assessment</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '12%' }}>ERP Code</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '12%' }}>Remark</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'right', width: '10%' }}>Weight(g)</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'center', width: '6%' }}>Qty</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'right', width: '13%' }}>Total(g)</th>
+              </tr>
+            ) : (
+              <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'center', width: '5%' }}>No</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '22%' }}>Component Name</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '15%' }}>Material</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '13%' }}>ERP Code</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'left', width: '15%' }}>Remark</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'right', width: '11%' }}>Weight(g)</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'center', width: '7%' }}>Qty</th>
+                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#4b5563', textAlign: 'right', width: '12%' }}>Total(g)</th>
+              </tr>
+            )}
           </thead>
           <tbody>
             {renderRows(items, `target-${groupId}`)}
             {/* 합계 행 */}
             <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #d1d5db' }}>
-              <td colSpan="7" style={{ padding: '10px 8px', fontWeight: 'bold', color: config.borderColor, textAlign: 'center', letterSpacing: '1px', fontSize: '10px' }}>
+              <td colSpan={showEvalResult ? "8" : "7"} style={{ padding: '10px 8px', fontWeight: 'bold', color: config.borderColor, textAlign: 'center', letterSpacing: '1px', fontSize: '10px' }}>
                 {config.totalLabel}
               </td>
               <td style={{ padding: '10px 8px', fontWeight: 'bold', color: config.borderColor, textAlign: 'right', fontSize: '10px' }}>
@@ -351,6 +409,14 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
             <td style={{ padding: '8px 6px', color: '#6b7280' }}>Date of Issue</td>
             <td style={{ padding: '8px 6px', fontWeight: '500', wordBreak: 'break-all' }}>{formatDateForSpec(issueDate)}</td>
           </tr>
+          {showEvalResult && (
+            <tr>
+              <td style={{ borderTop: '1px solid #e5e7eb', padding: '8px 6px', color: '#1e3a8a', fontWeight: 'bold' }}>Recyclability Grade</td>
+              <td colSpan="3" style={{ borderTop: '1px solid #e5e7eb', padding: '8px 6px', fontWeight: 'bold', color: finalGrade.includes('어려움') ? '#dc2626' : '#2563eb' }}>
+                {finalGrade}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
@@ -396,16 +462,30 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', tableLayout: 'fixed' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '5%' }}>No</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '22%' }}>Component Name</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>Material</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '13%' }}>ERP Code</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>Remark</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '11%' }}>Weight(g)</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '7%' }}>Qty</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '12%' }}>Total(g)</th>
-              </tr>
+              {showEvalResult ? (
+                <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '4%' }}>No</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '18%' }}>Component Name</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '13%' }}>Material</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#3b82f6', textAlign: 'left', width: '12%' }}>Recyclability Assessment</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '12%' }}>ERP Code</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '12%' }}>Remark</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '10%' }}>Weight(g)</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '6%' }}>Qty</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '13%' }}>Total(g)</th>
+                </tr>
+              ) : (
+                <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '5%' }}>No</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '22%' }}>Component Name</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>Material</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '13%' }}>ERP Code</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>Remark</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '11%' }}>Weight(g)</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '7%' }}>Qty</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '12%' }}>Total(g)</th>
+                </tr>
+              )}
             </thead>
             <tbody>
               {renderRows(exemptItems, 'exempt')}

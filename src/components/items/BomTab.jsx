@@ -107,6 +107,48 @@ export default function BomTab() {
   const chargingItems = (currentVersion?.bomItems || []).filter(item => (item.processType || '충진') === '충진');
   const packagingItems = (currentVersion?.bomItems || []).filter(item => item.processType === '포장');
 
+  // 완제품 최종 등급 자동 산출 로직
+  const getGradeRank = (grade) => {
+    if (!grade || grade.includes('미평가')) return 99;
+    if (grade.includes('최우수')) return 1;
+    if (grade.includes('우수')) return 2;
+    if (grade.includes('보통') || grade.includes('용이')) return 3;
+    if (grade.includes('어려움')) return 4;
+    return 99;
+  };
+
+  const calculateFinalGrade = () => {
+    if (!currentVersion?.bomItems || currentVersion.bomItems.length === 0) return '등록된 부자재 없음';
+    
+    let maxRank = 0;
+    let hasUnevaluated = false;
+
+    for (const item of currentVersion.bomItems) {
+      const comp = packagingComponents.find(c => String(c.id) === String(item.componentId));
+      const grade = comp?.materialEvalResult || '미평가';
+      
+      if (grade.includes('미평가')) {
+        hasUnevaluated = true;
+        break;
+      }
+      
+      const rank = getGradeRank(grade);
+      if (rank > maxRank) maxRank = rank;
+    }
+
+    if (hasUnevaluated) return '평가 진행중(미평가)';
+    
+    switch(maxRank) {
+      case 1: return '재활용 최우수';
+      case 2: return '재활용 우수';
+      case 3: return '재활용 용이(보통)';
+      case 4: return '재활용 어려움';
+      default: return '평가 진행중(미평가)';
+    }
+  };
+
+  const finalProductGrade = calculateFinalGrade();
+
   const columns = [
     { label: '선택', render: () => <input type="checkbox" disabled={isConfirmed} className="rounded disabled:opacity-50" /> },
     {
@@ -174,6 +216,25 @@ export default function BomTab() {
         return isPlastic
           ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">{mat}</span>
           : <span className="text-slate-600 text-sm">{mat}</span>;
+      }
+    },
+    {
+      label: '재질평가결과',
+      render: (_, row) => {
+        const comp = packagingComponents.find(c => String(c.id) === String(row.componentId));
+        const evalResult = comp?.materialEvalResult || '미평가';
+        const isUnevaluated = evalResult.includes('미평가');
+        const isBad = evalResult.includes('어려움');
+        
+        return (
+          <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold border ${
+            isUnevaluated ? 'bg-slate-50 text-slate-500 border-slate-200' : 
+            isBad ? 'bg-red-50 text-red-600 border-red-200' :
+            'bg-blue-50 text-blue-600 border-blue-200'
+          }`}>
+            {evalResult}
+          </span>
+        );
       }
     },
     {
@@ -413,7 +474,7 @@ export default function BomTab() {
           </div>
         </div>
         <div className="text-slate-300 text-xl">=</div>
-        <div className="text-right">
+        <div className="text-right border-r border-emerald-200 pr-4">
           <div className="text-xs text-emerald-600 font-medium mb-1">합성수지 총 배출 중량 (EPR 신고용)</div>
           <div className="text-2xl font-bold text-emerald-700 font-mono">
             {totalPlasticWeightByProduction.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -421,6 +482,16 @@ export default function BomTab() {
             <span className="text-sm font-normal text-slate-500 ml-2">
               ({(totalPlasticWeightByProduction / 1000).toFixed(4)} kg)
             </span>
+          </div>
+        </div>
+        <div className="text-right pl-2">
+          <div className="text-xs text-indigo-600 font-medium mb-1">완제품 최종 재질등급 (최하위 기준)</div>
+          <div className={`text-xl font-bold ${
+            finalProductGrade.includes('미평가') ? 'text-slate-500' :
+            finalProductGrade.includes('어려움') ? 'text-red-600' :
+            'text-blue-700'
+          }`}>
+            {finalProductGrade}
           </div>
         </div>
       </div>

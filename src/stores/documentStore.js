@@ -14,6 +14,10 @@ const useDocumentStore = create(
       // ─── 발행된 문서 목록 ───
       documents: [],
       
+      // ─── 사양서 옵션: 재질평가결과 표기 여부 ───
+      showEvalResult: true,
+      setShowEvalResult: (val) => set({ showEvalResult: val }),
+      
       // ─── 데이터 초기 로드 (Supabase) ───
       fetchData: async () => {
         const { data } = await supabase.from('documents').select('*');

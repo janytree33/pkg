@@ -30,6 +30,7 @@ const usePackagingStore = create(
           partType: c.part_type || '', 
           subComponents: c.sub_components || [], 
           material: c.material || '',
+          materialEvalResult: c.material_eval_result || '미평가',
           weight: c.weight_g || 0,
           weightPerUnit: c.weight_g || 0, 
           containerType: c.container_type || '',
@@ -93,6 +94,7 @@ const usePackagingStore = create(
                   partType: comp?.partType || '', 
                   subComponents: comp?.subComponents || [], 
                   material: comp?.material || '',
+                  materialEvalResult: comp?.materialEvalResult || '미평가',
                   weight: comp?.weight || 0,
                   qty: b.qty || 1,
                   processType: b.process_type || '충진'
@@ -139,6 +141,7 @@ const usePackagingStore = create(
         part_type: component.partType || '기타',
         sub_components: component.subComponents || [],
         material: component.material,
+        material_eval_result: component.materialEvalResult || '미평가',
         container_type: component.containerType || '',
         weight_g: component.weight || component.weightPerUnit || 0,
         supplier: component.supplier || '',
@@ -173,6 +176,7 @@ const usePackagingStore = create(
         part_type: updates.partType,
         sub_components: updates.subComponents || [],
         material: updates.material,
+        material_eval_result: updates.materialEvalResult,
         container_type: updates.containerType,
         weight_g: updates.weightPerUnit || updates.weight,
         supplier: updates.supplier,
@@ -325,6 +329,7 @@ const usePackagingStore = create(
           part_type: comp?.partType || bomItem.partType || '기타',
           sub_components: comp?.subComponents || [],
           material: comp?.material || 'PP',
+          material_eval_result: comp?.materialEvalResult || '미평가',
           container_type: comp?.containerType || '마개/캡/부속품(플라스틱)',
           weight_g: comp?.weight || comp?.weightPerUnit || 0,
           notes: comp?.description || ''
@@ -373,6 +378,7 @@ const usePackagingStore = create(
         partType: bomItem.partType || comp?.partType || '',
         subComponents: comp?.subComponents || [],
         material: comp?.material || '',
+        materialEvalResult: comp?.materialEvalResult || '미평가',
         weight: comp?.weight || comp?.weightPerUnit || 0,
         qty: bomItem.qty || 1,
         processType: targetProcessType
