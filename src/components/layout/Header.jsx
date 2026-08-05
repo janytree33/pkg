@@ -8,7 +8,9 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { SIDEBAR_MENUS } from '../../utils/constants';
 
-export default function Header() {
+import { Menu } from 'lucide-react';
+
+export default function Header({ onMenuToggle }) {
   // 현재 경로에 해당하는 메뉴 정보 가져오기
   const location = useLocation();
   const currentMenu = SIDEBAR_MENUS.find((m) => m.path === location.pathname);
@@ -27,8 +29,16 @@ export default function Header() {
       className="flex items-center justify-between h-14 px-5 bg-white border-b border-slate-100 z-10 shrink-0"
       style={{ boxShadow: '0 1px 8px 0 rgba(16,185,129,0.06)' }}
     >
-      {/* 좌측: JT 로고 */}
+      {/* 좌측: JT 로고 및 햄버거 메뉴 */}
       <div className="flex items-center gap-3 flex-1">
+        {/* 💡 lg:hidden을 제거하여 PC/모바일 상관없이 항상 보이도록 수정! */}
+        <button 
+          onClick={onMenuToggle}
+          className="flex items-center justify-center p-1.5 -ml-2 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+          title="사이드바 메뉴 토글"
+        >
+          <Menu size={22} />
+        </button>
         <img
           src="/JT_Logo_Horizontal_copy.svg"
           alt="Janytree Logo"

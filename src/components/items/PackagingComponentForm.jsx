@@ -25,6 +25,13 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
   
   const [isSaving, setIsSaving] = useState(false);
 
+  // 💡 기존에 '0450' 같은 숫자 코드로 저장된 데이터를 열었을 때 자동으로 라벨(글자)로 변환해주는 헬퍼 함수
+  const getContainerLabel = (val) => {
+    if (!val) return '';
+    const match = CONTAINER_TYPE_MAP.find(c => c.label === val || c.code === val);
+    return match ? match.label : val;
+  };
+
   useEffect(() => {
     if (editData) {
       let parsedFiles = [];
@@ -46,11 +53,16 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         name: editData.name || '',
         spec: editData.spec || '',
         partType: editData.partType || DEFAULT_PART_TYPES[0],
-        containerType: editData.containerType || '',
+        // ✅ 불러올 때 코드가 섞여 있어도 라벨로 강제 변환
+        containerType: getContainerLabel(editData.containerType),
         material: editData.material || '',
         weightPerUnit: editData.weightPerUnit || editData.weight || '',
         remark: editData.remark || '',
-        subComponents: editData.subComponents || [],
+        // ✅ 서브컴포넌트도 동일하게 라벨로 변환 적용
+        subComponents: (editData.subComponents || []).map(sub => ({
+          ...sub,
+          containerType: getContainerLabel(sub.containerType)
+        })),
         specFiles: [],
         existingSpecFiles: parsedFiles
       });
@@ -217,7 +229,8 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             >
               <option value="">선택 (필수)</option>
               {containerOptions.map(c => (
-                <option key={c.code} value={c.code}>{c.label}</option>
+                // ✅ value를 c.code에서 c.label로 변경 (고유값으로 저장하여 엉뚱한 값 선택 방지)
+                <option key={c.label} value={c.label}>{c.label}</option>
               ))}
             </select>
           </div>
@@ -326,7 +339,8 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
                         >
                           <option value="">선택</option>
                           {containerOptions.map(c => (
-                            <option key={c.code} value={c.code}>{c.label}</option>
+                            // ✅ 서브컴포넌트 드롭다운도 동일하게 value를 c.label로 변경
+                            <option key={c.label} value={c.label}>{c.label}</option>
                           ))}
                         </select>
                       </td>
