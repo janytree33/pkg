@@ -2,7 +2,7 @@
  * CompanyInfoForm.jsx
  * ─────────────────────────────────────
  * 회사 정보 설정 화면 ⭐
- * 로고 및 직인(국문/영문) 비율 최적화 완료!
+ * 미리보기 카드 로고/직인 레이아웃 황금비율 최적화!
  */
 import { useState, useRef } from 'react';
 import { Save, Upload, Trash2, Building2, Image } from 'lucide-react';
@@ -220,27 +220,29 @@ export default function CompanyInfoForm() {
           <h3 className="text-sm font-semibold text-slate-500 mb-4 uppercase tracking-wider">
             미리보기
           </h3>
-          {/* 로고 미리보기 (크기 및 비율 최적화) */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700 min-h-[48px]">
-            <span className="text-lg font-bold text-slate-900 dark:text-white">
+          
+          {/* 상단 로고 미리보기 (헤더 조합 정렬) */}
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700 min-h-[44px]">
+            <span className="text-base font-bold text-slate-800 dark:text-white truncate mr-2">
               {form.nameEn || 'JANYTREE'}
             </span>
             {form.logo ? (
-              <img src={form.logo} alt="Logo" className="max-h-12 max-w-[150px] object-contain" />
+              <img src={form.logo} alt="Logo" className="h-8 max-w-[120px] object-contain shrink-0" />
             ) : (
-              <span className="text-xs text-slate-400 border border-dashed border-slate-300 px-2 py-1 rounded">
+              <span className="text-xs text-slate-400 border border-dashed border-slate-300 px-2 py-1 rounded shrink-0">
                 LOGO
               </span>
             )}
           </div>
+
           {/* 회사 정보 미리보기 */}
-          <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
-            <p className="font-semibold text-slate-800 dark:text-slate-200">
+          <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+            <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm mb-2">
               {form.nameKo || '(회사명 미입력)'}
             </p>
-            <p>{form.addressKo || '(주소 미입력)'}</p>
-            <p className="text-[11px] text-slate-400">{form.addressEn || ''}</p>
-            <p>
+            <p className="leading-relaxed">{form.addressKo || '(주소 미입력)'}</p>
+            <p className="text-[11px] text-slate-400 leading-relaxed">{form.addressEn || ''}</p>
+            <p className="pt-1">
               Tel: {form.phone || '-'} | Fax: {form.fax || '-'}
             </p>
             <p>Email: {form.email || '-'}</p>
@@ -248,21 +250,33 @@ export default function CompanyInfoForm() {
             {form.ceoName && <p>대표자: {form.ceoName}</p>}
           </div>
           
-          {/* 직인 미리보기 (국문/영문 개별 수직 배치로 크기 확보) */}
+          {/* 하단 직인 미리보기 (황금 밸런스 균등배치) */}
           {(form.stamp || form.stampEn) && (
-            <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-              {form.stamp && (
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-medium text-slate-400 mb-1">국문 직인</span>
-                  <img src={form.stamp} alt="국문직인" className="max-h-20 max-w-full object-contain opacity-90" />
-                </div>
-              )}
-              {form.stampEn && (
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-medium text-slate-400 mb-1">영문 직인</span>
-                  <img src={form.stampEn} alt="영문직인" className="max-h-20 max-w-full object-contain opacity-90" />
-                </div>
-              )}
+            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 items-end">
+              <div className="text-center">
+                {form.stamp ? (
+                  <>
+                    <span className="text-[10px] text-slate-400 block mb-1">국문 직인</span>
+                    <div className="h-16 flex items-center justify-center">
+                      <img src={form.stamp} alt="국문직인" className="max-h-16 max-w-full object-contain opacity-90" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-16" />
+                )}
+              </div>
+              <div className="text-center">
+                {form.stampEn ? (
+                  <>
+                    <span className="text-[10px] text-slate-400 block mb-1">영문 직인</span>
+                    <div className="h-16 flex items-center justify-center">
+                      <img src={form.stampEn} alt="영문직인" className="max-h-16 max-w-full object-contain opacity-90" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-16" />
+                )}
+              </div>
             </div>
           )}
         </div>
