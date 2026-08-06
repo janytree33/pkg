@@ -56,11 +56,9 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
 
   const isKo = docLanguage === 'ko';
 
-  // 선택된 제품 정보가 없다면 화면을 그리지 않습니다.
-  if (!product) return null;
+  // 선택된 제품 정보가 없다면 아래에서 early return 처리합니다.
 
-  // 선택된 제품의 버전 정보를 가져옵니다. (기본값 처리 포함)
-  const version = product.versions && product.versions.length > 0
+  const version = product?.versions && product.versions.length > 0
     ? product.versions[versionIndex] || product.versions[0]
     : { version: '1.0', bomItems: [] };
 
@@ -162,7 +160,10 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     });
 
     return { groupedItems: grouped, exemptItems: exempt };
-  }, [version.bomItems, packagingComponents]);
+  }, [version?.bomItems, packagingComponents]);
+
+  // 선택된 제품 정보가 없다면 화면을 그리지 않습니다. (모든 훅 선언 이후에 배치)
+  if (!product) return null;
 
   // ─── 완제품 최종 재활용 등급 산출 로직 ───
   const getGradeRank = (grade) => {
@@ -179,19 +180,24 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     
     let maxRank = 0;
     let hasUnevaluated = false;
+    let hasTargetItems = false;
 
-    for (const item of version.bomItems) {
-      const comp = packagingComponents.find(c => String(c.id) === String(item.componentId || item.component_id));
-      const grade = comp?.materialEvalResult || '미평가';
-      
-      if (grade.includes('미평가')) {
-        hasUnevaluated = true;
-        break;
-      }
-      
-      const rank = getGradeRank(grade);
-      if (rank > maxRank) maxRank = rank;
-    }
+    // 비대상 부자재(exemptItems)를 제외한 신고 대상(groupedItems) 부자재만 평가합니다.
+    Object.values(groupedItems).forEach(groupArr => {
+      groupArr.forEach(displayItem => {
+        hasTargetItems = true;
+        const grade = displayItem.comp.materialEvalResult || '미평가';
+        
+        if (grade.includes('미평가')) {
+          hasUnevaluated = true;
+        } else {
+          const rank = getGradeRank(grade);
+          if (rank > maxRank) maxRank = rank;
+        }
+      });
+    });
+
+    if (!hasTargetItems) return '-';
 
     if (hasUnevaluated) return isKo ? '평가 진행중(미평가)' : 'Pending (Not Evaluated)';
     

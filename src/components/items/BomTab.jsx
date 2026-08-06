@@ -9,7 +9,7 @@ import DataTable from '../common/DataTable';
 import PackagingComponentForm from './PackagingComponentForm';
 import BomComponentSelector from './BomComponentSelector';
 import { Plus, Copy, Trash2, FlaskConical, Lock, Unlock, CheckCircle2 } from 'lucide-react';
-import { PLASTIC_MATERIALS } from '../../utils/constants';
+import { PLASTIC_MATERIALS, EPR_MATERIAL_GROUPS } from '../../utils/constants';
 
 export default function BomTab() {
   const {
@@ -122,19 +122,47 @@ export default function BomTab() {
     
     let maxRank = 0;
     let hasUnevaluated = false;
+    let hasTargetItems = false;
 
     for (const item of currentVersion.bomItems) {
       const comp = packagingComponents.find(c => String(c.id) === String(item.componentId));
-      const grade = comp?.materialEvalResult || '미평가';
+      if (!comp) continue;
+
+      // 비대상 자재 판별 함수
+      const checkIsTarget = (material, containerType) => {
+        const group = EPR_MATERIAL_GROUPS.find(g => g.materials.includes(material));
+        if (group && containerType && !containerType.startsWith('신고제외')) {
+          return true; // 신고 대상
+        }
+        return false; // 비대상
+      };
+
+      let isTarget = false;
+
+      // 다부속 자재인 경우 부속품 중 하나라도 신고 대상이면 대상
+      if (comp.subComponents && comp.subComponents.length > 0) {
+        isTarget = comp.subComponents.some(sub => 
+          checkIsTarget(sub.material || '', sub.containerType || comp.containerType || '')
+        );
+      } else {
+        isTarget = checkIsTarget(comp.material || '', comp.containerType || '');
+      }
+
+      // 비대상 자재는 등급 계산에서 완전히 제외
+      if (!isTarget) continue;
+
+      hasTargetItems = true;
+      const grade = comp.materialEvalResult || '미평가';
       
       if (grade.includes('미평가')) {
         hasUnevaluated = true;
-        break;
+      } else {
+        const rank = getGradeRank(grade);
+        if (rank > maxRank) maxRank = rank;
       }
-      
-      const rank = getGradeRank(grade);
-      if (rank > maxRank) maxRank = rank;
     }
+
+    if (!hasTargetItems) return '-';
 
     if (hasUnevaluated) return '평가 진행중(미평가)';
     
