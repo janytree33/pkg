@@ -15,6 +15,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     spec: '',
     partType: DEFAULT_PART_TYPES[0], 
     material: '',
+    evalType: '미평가', // 평가 구분 추가
     materialEvalResult: '미평가',
     weightPerUnit: '',
     remark: '',
@@ -55,6 +56,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         partType: editData.partType || DEFAULT_PART_TYPES[0],
         containerType: getContainerLabel(editData.containerType),
         material: editData.material || '',
+        evalType: editData.evalType || '미평가', // 기존 데이터 매핑
         materialEvalResult: editData.materialEvalResult || '미평가',
         weightPerUnit: editData.weightPerUnit || editData.weight || '',
         remark: editData.remark || '',
@@ -249,8 +251,49 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
               ))}
             </select>
           </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2">평가 구분</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="evalType"
+                  value="미평가"
+                  checked={formData.evalType === '미평가'}
+                  onChange={e => setFormData({...formData, evalType: e.target.value})}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-slate-600">미평가</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="evalType"
+                  value="자체평가"
+                  checked={formData.evalType === '자체평가'}
+                  onChange={e => setFormData({...formData, evalType: e.target.value})}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-slate-600">자체(간이) 평가</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="evalType"
+                  value="공인인증"
+                  checked={formData.evalType === '공인인증'}
+                  onChange={e => setFormData({...formData, evalType: e.target.value})}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-slate-600">공인 기관 검사 완료</span>
+              </label>
+            </div>
+          </div>
           
-          <div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
             <label className="block text-sm font-medium text-gray-700 mb-1">재질·구조 평가 결과</label>
             <select 
               value={formData.materialEvalResult} 
@@ -264,7 +307,9 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
               <option value="재활용 어려움">재활용 어려움</option>
             </select>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">총 개당 중량(g)</label>
             <input 
@@ -298,14 +343,23 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
           <div className="flex justify-between items-center mb-2">
             <div>
               <label className="block text-sm font-bold text-slate-700">부속품 (서브컴포넌트) 상세</label>
-              <span className="text-xs text-slate-500">한 부자재가 캡, 펌프 등 여러 부품으로 나뉠 경우 추가해 주세요. (중량 자동 합산)</span>
+              <p className="text-xs text-slate-500 mt-1">튜브 세트, 펌프 등 여러 재질로 분리되는 부속품을 등록합니다.</p>
             </div>
             <button
               onClick={handleAddSubComponent}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded hover:bg-emerald-200 transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 text-slate-600 rounded hover:bg-slate-50 flex items-center gap-1 transition-colors shadow-sm"
             >
-              <Plus size={14} /> 부품 추가
+              <Plus size={14} /> 부속품 추가
             </button>
+          </div>
+          
+          <div className="mb-4 p-3 bg-sky-50 border border-sky-100 rounded-lg flex gap-2 items-start">
+            <div className="text-sky-500 mt-0.5">💡</div>
+            <div className="text-sm text-sky-800 leading-relaxed">
+              <strong>[복합 부자재 입력 가이드]</strong><br/>
+              드롭퍼, 펌프 등 여러 부품으로 구성된 자재는 상단 [재질]에 가장 비중이 큰 '대표 재질'을 선택해 주시고, 
+              세부 부품별 재질과 중량은 아래 [부속품 상세]에 각각 분리하여 등록해 주세요.
+            </div>
           </div>
           
           {formData.subComponents.length > 0 ? (

@@ -413,14 +413,30 @@ export default function PackagingMaster() {
                     <td className="px-4 py-3 text-center align-top">
                       {(() => {
                         const grade = comp.materialEvalResult || '미평가';
+                        const evalType = comp.evalType || '미평가';
+                        
                         let badgeClass = 'bg-gray-100 text-gray-600 border-gray-200';
-                        if (grade.includes('제외') || grade.includes('비대상')) badgeClass = 'bg-slate-100 text-slate-500 border-slate-200';
-                        else if (grade.includes('최우수') || grade.includes('우수') || grade.includes('보통') || grade.includes('용이')) badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-                        else if (grade.includes('어려움')) badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                        let prefix = '';
+                        
+                        if (grade.includes('제외') || grade.includes('비대상')) {
+                          badgeClass = 'bg-slate-100 text-slate-500 border-slate-200';
+                          prefix = '';
+                        } else if (grade !== '미평가') {
+                          if (evalType === '자체평가') {
+                            badgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+                            prefix = '[자체] ';
+                          } else if (evalType === '공인인증') {
+                            badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+                            prefix = '[공인] ';
+                          } else {
+                            if (grade.includes('어려움')) badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                            else badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+                          }
+                        }
                         
                         return (
                           <span className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border ${badgeClass} whitespace-nowrap`}>
-                            {grade}
+                            {prefix}{grade}
                           </span>
                         );
                       })()}
