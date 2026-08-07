@@ -170,7 +170,7 @@ const usePackagingStore = create(
           String(c.id) === String(id) ? { ...c, ...updates } : c
         ),
       }));
-      await supabase.from('packaging_components').update({
+      const { error } = await supabase.from('packaging_components').update({
         reg_no: updates.regNo,
         code: updates.code,
         name: updates.name,
@@ -187,6 +187,12 @@ const usePackagingStore = create(
         notes: updates.remark || updates.description,
         updated_at: new Date().toISOString()
       }).eq('id', id);
+      
+      if (error) {
+        console.error("업데이트 실패:", error);
+        alert(`저장에 실패했습니다. DB 설정을 확인해 주세요.\n(에러: ${error.message})`);
+        return false;
+      }
       return true;
     },
 
