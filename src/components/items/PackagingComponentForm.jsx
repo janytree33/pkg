@@ -48,6 +48,11 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         }
       } catch(e) {}
 
+      let mappedEval = editData.materialEvalResult || '미평가';
+      if (mappedEval.includes('비대상') || mappedEval.includes('제외')) {
+        mappedEval = '대상제외';
+      }
+
       setFormData({
         regNo: editData.regNo || '',
         code: editData.code || '',
@@ -57,7 +62,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         containerType: getContainerLabel(editData.containerType),
         material: editData.material || '',
         evalType: editData.evalType || '미평가', // 기존 데이터 매핑
-        materialEvalResult: editData.materialEvalResult || '미평가',
+        materialEvalResult: mappedEval,
         weightPerUnit: editData.weightPerUnit || editData.weight || '',
         remark: editData.remark || '',
         // ✅ 서브컴포넌트도 동일하게 라벨로 변환 적용
