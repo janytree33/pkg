@@ -251,11 +251,13 @@ export default function BomTab() {
       render: (_, row) => {
         const comp = packagingComponents.find(c => String(c.id) === String(row.componentId));
         const evalResult = comp?.materialEvalResult || '미평가';
-        const isUnevaluated = evalResult.includes('미평가');
+        const isUnevaluated = evalResult === '미평가';
         const isBad = evalResult.includes('어려움');
+        const isExempt = evalResult.includes('제외') || evalResult.includes('비대상') || evalResult === '대상제외';
         
         return (
           <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold border ${
+            isExempt ? 'bg-purple-50 text-purple-600 border-purple-200' :
             isUnevaluated ? 'bg-slate-50 text-slate-500 border-slate-200' : 
             isBad ? 'bg-red-50 text-red-600 border-red-200' :
             'bg-blue-50 text-blue-600 border-blue-200'

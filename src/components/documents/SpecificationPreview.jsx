@@ -254,11 +254,12 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
           <td style={{ padding: '5px 4px', color: '#4b5563', wordBreak: 'break-all', fontSize: '10px' }}>{comp.material || '-'}</td>
           {(showEvalResult && !forceHideEval) && <td style={{ padding: '5px 4px', color: '#3b82f6', fontWeight: '600', wordBreak: 'break-all', fontSize: '10px' }}>
             {isKo 
-              ? (comp.materialEvalResult || '미평가')
+              ? (comp.materialEvalResult === '대상제외' || forceHideEval === false && groupName === 'exempt' ? '대상제외' : comp.materialEvalResult || '미평가')
               : (comp.materialEvalResult === '재활용 최우수' ? 'Best' :
                  comp.materialEvalResult === '재활용 우수' ? 'Excellent' :
                  comp.materialEvalResult === '재활용 보통' ? 'Normal' :
-                 comp.materialEvalResult === '재활용 어려움' ? 'Difficult' : 'Pending')}
+                 comp.materialEvalResult === '재활용 어려움' ? 'Difficult' : 
+                 comp.materialEvalResult === '대상제외' || groupName === 'exempt' ? 'Exempt' : 'Pending')}
           </td>}
           <td style={{ padding: '5px 4px', color: '#6b7280', wordBreak: 'break-all', fontSize: '10px' }}>{comp.code || '-'}</td>
           <td style={{ padding: '5px 4px', color: '#6b7280', wordBreak: 'break-all', fontSize: '10px' }}>{comp.remark || comp.description || '-'}</td>
@@ -510,19 +511,33 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', tableLayout: 'fixed' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '5%' }}>No</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '22%' }}>{isKo ? '부품명' : 'Component Name'}</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>{isKo ? '재질' : 'Material'}</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '13%' }}>{isKo ? 'ERP 코드' : 'ERP Code'}</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>{isKo ? '비고' : 'Remark'}</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '11%' }}>{isKo ? '중량(g)' : 'Weight(g)'}</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '7%' }}>{isKo ? '수량' : 'Qty'}</th>
-                <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '12%' }}>{isKo ? '총계(g)' : 'Total(g)'}</th>
-              </tr>
+              {showEvalResult ? (
+                <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '4%' }}>No</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '18%' }}>{isKo ? '부품명' : 'Component Name'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '13%' }}>{isKo ? '재질' : 'Material'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '12%' }}>{isKo ? '재질·구조 평가' : 'Recyclability Assessment'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '12%' }}>{isKo ? 'ERP 코드' : 'ERP Code'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '12%' }}>{isKo ? '비고' : 'Remark'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '10%' }}>{isKo ? '중량(g)' : 'Weight(g)'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '6%' }}>{isKo ? '수량' : 'Qty'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '13%' }}>{isKo ? '총계(g)' : 'Total(g)'}</th>
+                </tr>
+              ) : (
+                <tr style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '5%' }}>No</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '22%' }}>{isKo ? '부품명' : 'Component Name'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>{isKo ? '재질' : 'Material'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '13%' }}>{isKo ? 'ERP 코드' : 'ERP Code'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'left', width: '15%' }}>{isKo ? '비고' : 'Remark'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '11%' }}>{isKo ? '중량(g)' : 'Weight(g)'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'center', width: '7%' }}>{isKo ? '수량' : 'Qty'}</th>
+                  <th style={{ padding: '6px 4px', fontWeight: '600', color: '#9ca3af', textAlign: 'right', width: '12%' }}>{isKo ? '총계(g)' : 'Total(g)'}</th>
+                </tr>
+              )}
             </thead>
             <tbody>
-              {renderRows(exemptItems, 'exempt', true)}
+              {renderRows(exemptItems, 'exempt', false)}
             </tbody>
           </table>
         </div>

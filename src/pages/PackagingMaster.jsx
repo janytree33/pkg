@@ -82,7 +82,7 @@ export default function PackagingMaster() {
       if (filterEval !== 'all') {
         const grade = comp.materialEvalResult || '미평가';
         if (filterEval === '미평가') matchesEval = grade.includes('미평가');
-        else if (filterEval === '비대상') matchesEval = grade.includes('제외') || grade.includes('비대상');
+        else if (filterEval === '대상제외') matchesEval = grade.includes('제외') || grade.includes('비대상') || grade === '대상제외';
         else if (filterEval === '최우수') matchesEval = grade.includes('최우수');
         else if (filterEval === '우수') matchesEval = grade === '재활용 우수' || grade === '우수';
         else if (filterEval === '보통') matchesEval = grade.includes('보통') || grade.includes('용이');
@@ -235,7 +235,7 @@ export default function PackagingMaster() {
             >
               <option value="all">평가결과 (전체)</option>
               <option value="미평가">미평가</option>
-              <option value="비대상">비대상/제외</option>
+              <option value="대상제외">대상제외</option>
               <option value="최우수">재활용 최우수</option>
               <option value="우수">재활용 우수</option>
               <option value="보통">재활용 보통</option>
@@ -418,8 +418,8 @@ export default function PackagingMaster() {
                         let badgeClass = 'bg-gray-100 text-gray-600 border-gray-200';
                         let prefix = '';
                         
-                        if (grade.includes('제외') || grade.includes('비대상')) {
-                          badgeClass = 'bg-slate-100 text-slate-500 border-slate-200';
+                        if (grade.includes('제외') || grade.includes('비대상') || grade === '대상제외') {
+                          badgeClass = 'bg-purple-50 text-purple-600 border-purple-200';
                           prefix = '';
                         } else if (grade !== '미평가') {
                           if (evalType === '자체평가') {

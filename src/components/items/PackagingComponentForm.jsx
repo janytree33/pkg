@@ -301,6 +301,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="미평가">미평가</option>
+              <option value="대상제외">대상제외</option>
               <option value="재활용 최우수">재활용 최우수</option>
               <option value="재활용 우수">재활용 우수</option>
               <option value="재활용 보통">재활용 보통</option>
