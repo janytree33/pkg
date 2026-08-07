@@ -17,6 +17,7 @@ export default function PackagingMaster() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); 
+  const [filterEval, setFilterEval] = useState('all'); 
   const [showOnlySubComponents, setShowOnlySubComponents] = useState(false); 
   
   // 🌟 기본 정렬 기준: 코드(code) 오름차순(asc)
@@ -77,11 +78,22 @@ export default function PackagingMaster() {
       
       const matchesType = filterType === 'all' || comp.partType === filterType;
       
+      let matchesEval = true;
+      if (filterEval !== 'all') {
+        const grade = comp.materialEvalResult || '미평가';
+        if (filterEval === '미평가') matchesEval = grade.includes('미평가');
+        else if (filterEval === '비대상') matchesEval = grade.includes('제외') || grade.includes('비대상');
+        else if (filterEval === '최우수') matchesEval = grade.includes('최우수');
+        else if (filterEval === '우수') matchesEval = grade === '재활용 우수' || grade === '우수';
+        else if (filterEval === '보통') matchesEval = grade.includes('보통') || grade.includes('용이');
+        else if (filterEval === '어려움') matchesEval = grade.includes('어려움');
+      }
+      
       const matchesSubComp = !showOnlySubComponents || (comp.subComponents && comp.subComponents.length > 0);
       
-      return matchesSearch && matchesType && matchesSubComp;
+      return matchesSearch && matchesType && matchesEval && matchesSubComp;
     });
-  }, [packagingComponents, searchTerm, filterType, showOnlySubComponents]);
+  }, [packagingComponents, searchTerm, filterType, filterEval, showOnlySubComponents]);
 
   // 2. 컬럼별 클릭 정렬 처리 (기본: 코드 순)
   const sortedComponents = useMemo(() => {
@@ -209,12 +221,25 @@ export default function PackagingMaster() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
+              className="px-4 py-2 font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer border-r border-slate-200"
             >
               <option value="all">전체 포장형태</option>
               {DEFAULT_PART_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
+            </select>
+            <select
+              value={filterEval}
+              onChange={(e) => setFilterEval(e.target.value)}
+              className="px-4 py-2 font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
+            >
+              <option value="all">평가결과 (전체)</option>
+              <option value="미평가">미평가</option>
+              <option value="비대상">비대상/제외</option>
+              <option value="최우수">재활용 최우수</option>
+              <option value="우수">재활용 우수</option>
+              <option value="보통">재활용 보통</option>
+              <option value="어려움">재활용 어려움</option>
             </select>
           </div>
         </div>
@@ -309,6 +334,15 @@ export default function PackagingMaster() {
                 </th>
 
                 <th className="px-4 py-3 font-semibold text-slate-600 text-center">성적서</th>
+                <th 
+                  onClick={() => handleSort('materialEvalResult')}
+                  className="px-4 py-3 font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors group text-center"
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>재질·구조 평가</span>
+                    {renderSortIcon('materialEvalResult')}
+                  </div>
+                </th>
                 <th className="px-4 py-3 font-semibold text-slate-600 text-center">관리</th>
               </tr>
             </thead>
@@ -377,6 +411,21 @@ export default function PackagingMaster() {
                       })()}
                     </td>
                     <td className="px-4 py-3 text-center align-top">
+                      {(() => {
+                        const grade = comp.materialEvalResult || '미평가';
+                        let badgeClass = 'bg-gray-100 text-gray-600 border-gray-200';
+                        if (grade.includes('제외') || grade.includes('비대상')) badgeClass = 'bg-slate-100 text-slate-500 border-slate-200';
+                        else if (grade.includes('최우수') || grade.includes('우수') || grade.includes('보통') || grade.includes('용이')) badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+                        else if (grade.includes('어려움')) badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                        
+                        return (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border ${badgeClass} whitespace-nowrap`}>
+                            {grade}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-3 text-center align-top">
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleOpenForm(comp)}
@@ -398,7 +447,7 @@ export default function PackagingMaster() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="px-4 py-16 text-center text-slate-400">
+                  <td colSpan="10" className="px-4 py-16 text-center text-slate-400">
                     <Package size={32} className="mx-auto mb-3 opacity-30" />
                     등록된 포장재가 없거나 검색 결과가 없습니다.
                   </td>
