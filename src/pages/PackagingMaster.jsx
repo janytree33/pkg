@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Plus, Search, Package, Edit, Trash2, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, Layers } from 'lucide-react';
+import { Plus, Search, Package, Edit, Trash2, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, Layers, Link, Unlink, Copy } from 'lucide-react';
 import usePackagingStore from '../stores/packagingStore';
+import useEprEvaluationStore from '../stores/eprEvaluationStore';
 import PackagingComponentForm from '../components/items/PackagingComponentForm';
 import Modal from '../components/common/Modal';
 import { MATERIAL_OPTIONS, CONTAINER_TYPE_MAP, DEFAULT_PART_TYPES } from '../utils/constants';
@@ -12,17 +13,22 @@ export default function PackagingMaster() {
     addPackagingComponent, 
     updatePackagingComponent, 
     deletePackagingComponent,
-    uploadComponentsFromExcel
+    uploadComponentsFromExcel,
+    groupPackagingComponents,
+    ungroupPackagingComponents,
+    duplicatePackagingComponent
   } = usePackagingStore();
+  const eprEvaluations = useEprEvaluationStore(state => state.evaluations);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); 
-  const [filterEval, setFilterEval] = useState('all'); 
   const [showOnlySubComponents, setShowOnlySubComponents] = useState(false); 
   
   // 🌟 기본 정렬 기준: 코드(code) 오름차순(asc)
   const [sortField, setSortField] = useState('code'); 
   const [sortOrder, setSortOrder] = useState('asc'); 
+  
+  const [selectedComponentIds, setSelectedComponentIds] = useState([]); // 다중 선택 상태 추가
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState(null);
@@ -77,23 +83,11 @@ export default function PackagingMaster() {
         comp.regNo?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesType = filterType === 'all' || comp.partType === filterType;
-      
-      let matchesEval = true;
-      if (filterEval !== 'all') {
-        const grade = comp.materialEvalResult || '미평가';
-        if (filterEval === '미평가') matchesEval = grade.includes('미평가');
-        else if (filterEval === '대상제외') matchesEval = grade.includes('제외') || grade.includes('비대상') || grade === '대상제외';
-        else if (filterEval === '최우수') matchesEval = grade.includes('최우수');
-        else if (filterEval === '우수') matchesEval = grade === '재활용 우수' || grade === '우수';
-        else if (filterEval === '보통') matchesEval = grade.includes('보통') || grade.includes('용이');
-        else if (filterEval === '어려움') matchesEval = grade.includes('어려움');
-      }
-      
       const matchesSubComp = !showOnlySubComponents || (comp.subComponents && comp.subComponents.length > 0);
       
-      return matchesSearch && matchesType && matchesEval && matchesSubComp;
+      return matchesSearch && matchesType && matchesSubComp;
     });
-  }, [packagingComponents, searchTerm, filterType, filterEval, showOnlySubComponents]);
+  }, [packagingComponents, searchTerm, filterType, showOnlySubComponents]);
 
   // 2. 컬럼별 클릭 정렬 처리 (기본: 코드 순)
   const sortedComponents = useMemo(() => {
@@ -141,9 +135,53 @@ export default function PackagingMaster() {
     if (sortField !== field) {
       return <ArrowUpDown size={13} className="text-slate-300 opacity-60 group-hover:opacity-100 transition-opacity" />;
     }
-    return sortOrder === 'asc' 
+    return sortOrder === 'asc'
       ? <ArrowUp size={13} className="text-emerald-600 font-bold" /> 
       : <ArrowDown size={13} className="text-emerald-600 font-bold" />;
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedComponentIds.length === sortedComponents.length) {
+      setSelectedComponentIds([]);
+    } else {
+      setSelectedComponentIds(sortedComponents.map(c => c.id));
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    if (selectedComponentIds.includes(id)) {
+      setSelectedComponentIds(selectedComponentIds.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedComponentIds([...selectedComponentIds, id]);
+    }
+  };
+
+  const handleGroupSelected = async () => {
+    if (selectedComponentIds.length < 2) {
+      alert('세트로 묶으려면 최소 2개 이상의 포장재를 선택해야 합니다.');
+      return;
+    }
+    const setId = crypto.randomUUID();
+    const success = await groupPackagingComponents(selectedComponentIds, setId);
+    if (success) {
+      setSelectedComponentIds([]);
+      alert('선택된 포장재가 하나의 평가 세트로 묶였습니다.');
+    }
+  };
+
+  const handleUngroupSelected = async () => {
+    if (selectedComponentIds.length === 0) {
+      alert('세트를 해제할 포장재를 선택해 주세요.');
+      return;
+    }
+    const confirm = window.confirm(`선택한 ${selectedComponentIds.length}개 포장재의 평가 세트 그룹핑을 해제하시겠습니까?`);
+    if (confirm) {
+      const success = await ungroupPackagingComponents(selectedComponentIds);
+      if (success) {
+        setSelectedComponentIds([]);
+        alert('평가 세트가 해제되었습니다.');
+      }
+    }
   };
 
   const handleOpenForm = (comp = null) => {
@@ -176,6 +214,15 @@ export default function PackagingMaster() {
     }
   };
 
+  const handleDuplicate = async (id, name) => {
+    if (window.confirm(`'${name}' 포장재를 복제하시겠습니까? (EPR 세트 지정은 해제된 상태로 복사됩니다)`)) {
+      const newComp = await duplicatePackagingComponent(id);
+      if (newComp) {
+        alert("성공적으로 복제되었습니다.");
+      }
+    }
+  };
+
   const getContainerLabel = (code) => {
     return CONTAINER_TYPE_MAP.find(c => c.code === code)?.label || code || '-';
   };
@@ -194,6 +241,26 @@ export default function PackagingMaster() {
           >
             <Upload size={16} /> 엑셀 일괄 업로드
           </button>
+          
+          {selectedComponentIds.length > 0 && (
+            <>
+              <button
+                onClick={handleUngroupSelected}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+                title="선택된 자재들의 세트 그룹핑을 해제합니다"
+              >
+                <Unlink size={16} /> 세트 해제 ({selectedComponentIds.length})
+              </button>
+              <button
+                onClick={handleGroupSelected}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-300 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm"
+                title="선택된 자재들을 하나의 평가 세트로 묶습니다"
+              >
+                <Link size={16} /> 선택 자재를 세트로 묶기 ({selectedComponentIds.length})
+              </button>
+            </>
+          )}
+
           <button
             onClick={() => handleOpenForm(null)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all hover:shadow-md"
@@ -221,25 +288,12 @@ export default function PackagingMaster() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer border-r border-slate-200"
+              className="px-4 py-2 font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
             >
               <option value="all">전체 포장형태</option>
               {DEFAULT_PART_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
-            </select>
-            <select
-              value={filterEval}
-              onChange={(e) => setFilterEval(e.target.value)}
-              className="px-4 py-2 font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
-            >
-              <option value="all">평가결과 (전체)</option>
-              <option value="미평가">미평가</option>
-              <option value="대상제외">대상제외</option>
-              <option value="최우수">재활용 최우수</option>
-              <option value="우수">재활용 우수</option>
-              <option value="보통">재활용 보통</option>
-              <option value="어려움">재활용 어려움</option>
             </select>
           </div>
         </div>
@@ -263,6 +317,14 @@ export default function PackagingMaster() {
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 select-none">
               <tr>
+                <th className="px-4 py-3 text-center">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                    checked={sortedComponents.length > 0 && selectedComponentIds.length === sortedComponents.length}
+                    onChange={handleToggleSelectAll}
+                  />
+                </th>
                 <th 
                   onClick={() => handleSort('regNo')}
                   className="px-4 py-3 font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors group"
@@ -334,13 +396,9 @@ export default function PackagingMaster() {
                 </th>
 
                 <th className="px-4 py-3 font-semibold text-slate-600 text-center">성적서</th>
-                <th 
-                  onClick={() => handleSort('materialEvalResult')}
-                  className="px-4 py-3 font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors group text-center"
-                >
+                <th className="px-4 py-3 font-semibold text-slate-600 text-center">
                   <div className="flex items-center justify-center gap-1.5">
-                    <span>재질·구조 평가</span>
-                    {renderSortIcon('materialEvalResult')}
+                    <span>EPR 평가결과 연동</span>
                   </div>
                 </th>
                 <th className="px-4 py-3 font-semibold text-slate-600 text-center">관리</th>
@@ -350,8 +408,21 @@ export default function PackagingMaster() {
             <tbody className="divide-y divide-slate-100">
               {sortedComponents.length > 0 ? (
                 sortedComponents.map((comp) => (
-                  <tr key={comp.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 text-slate-500 font-mono text-xs align-top">{comp.regNo || '-'}</td>
+                  <tr key={comp.id} className={`hover:bg-slate-50 transition-colors ${selectedComponentIds.includes(comp.id) ? 'bg-emerald-50/50' : ''}`}>
+                    <td className="px-4 py-3 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                        checked={selectedComponentIds.includes(comp.id)}
+                        onChange={() => handleToggleSelect(comp.id)}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 font-mono text-xs align-top">
+                      <div className="flex items-center gap-1">
+                        {comp.eprSetId && <Link size={12} className="text-indigo-500" title="평가 세트로 묶인 자재입니다" />}
+                        {comp.regNo || '-'}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-emerald-700 font-medium font-mono text-xs align-top">{comp.code}</td>
                     <td className="px-4 py-3 align-top">
                       <div className="font-semibold text-slate-800">{comp.name}</div>
@@ -380,7 +451,7 @@ export default function PackagingMaster() {
                     </td>
 
                     <td className="px-4 py-3 text-slate-700 font-medium align-top">
-                      {comp.weightPerUnit?.toFixed(4) || 0}g
+                      {Number(comp.weightPerUnit || 0).toFixed(2)}g
                       {comp.subComponents?.length > 0 && (
                         <span className="ml-1 text-[10px] text-emerald-600 font-normal">({comp.subComponents.length}개 부품)</span>
                       )}
@@ -412,37 +483,38 @@ export default function PackagingMaster() {
                     </td>
                     <td className="px-4 py-3 text-center align-top">
                       {(() => {
-                        const grade = comp.materialEvalResult || '미평가';
-                        const evalType = comp.evalType || '미평가';
+                        const linkedEval = eprEvaluations.find(e => (e.componentIds || []).includes(comp.id));
                         
-                        let badgeClass = 'bg-gray-100 text-gray-600 border-gray-200';
-                        let prefix = '';
-                        
-                        if (grade.includes('제외') || grade.includes('비대상') || grade === '대상제외') {
-                          badgeClass = 'bg-purple-50 text-purple-600 border-purple-200';
-                          prefix = '';
-                        } else if (grade !== '미평가') {
-                          if (evalType === '자체평가') {
-                            badgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
-                            prefix = '[자체] ';
-                          } else if (evalType === '공인인증') {
-                            badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-                            prefix = '[공인] ';
-                          } else {
-                            if (grade.includes('어려움')) badgeClass = 'bg-red-50 text-red-700 border-red-200';
-                            else badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-                          }
+                        if (linkedEval) {
+                          const grade = linkedEval.evalGrade;
+                          const badgeClass = grade.includes('어려움') ? 'bg-red-50 text-red-700 border-red-200' :
+                                            grade.includes('우수') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                            grade === '대상제외' ? 'bg-purple-50 text-purple-600 border-purple-200' :
+                                            'bg-blue-50 text-blue-700 border-blue-200';
+                          return (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border ${badgeClass}`}>
+                                {grade}
+                              </span>
+                              <span className="text-[10px] text-indigo-500 font-mono flex items-center gap-0.5">
+                                <Link size={10} /> {linkedEval.certNo}
+                              </span>
+                            </div>
+                          );
+                        } else {
+                          return <span className="text-[11px] text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">미연결</span>;
                         }
-                        
-                        return (
-                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border ${badgeClass} whitespace-nowrap`}>
-                            {prefix}{grade}
-                          </span>
-                        );
                       })()}
                     </td>
                     <td className="px-4 py-3 text-center align-top">
                       <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleDuplicate(comp.id, comp.name)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                          title="복제 (Clone)"
+                        >
+                          <Copy size={16} />
+                        </button>
                         <button
                           onClick={() => handleOpenForm(comp)}
                           className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
@@ -463,7 +535,7 @@ export default function PackagingMaster() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="10" className="px-4 py-16 text-center text-slate-400">
+                  <td colSpan="11" className="px-4 py-16 text-center text-slate-400">
                     <Package size={32} className="mx-auto mb-3 opacity-30" />
                     등록된 포장재가 없거나 검색 결과가 없습니다.
                   </td>

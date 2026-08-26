@@ -6,14 +6,18 @@ import useSettingsStore from './stores/settingsStore';
 import usePackagingStore from './stores/packagingStore';
 import useDocumentStore from './stores/documentStore';
 import useEprStore from './stores/eprStore';
+import useEprEvaluationStore from './stores/eprEvaluationStore';
+import useMasterDataStore from './stores/masterDataStore'; // ✨ MDM 스토어
 
 // 페이지들
 import Dashboard from './pages/Dashboard';
 import ItemManagement from './pages/ItemManagement';
 import DocumentManagement from './pages/DocumentManagement';
 import EprReporting from './pages/EprReporting';
+import EprEvaluationMaster from './pages/EprEvaluationMaster';
 import Settings from './pages/Settings';
 import PackagingMaster from './pages/PackagingMaster';
+import MasterDataManagement from './pages/MasterDataManagement'; // ✨ 기준관리 MDM
 
 function Layout() {
   // PC용 사이드바 축소/확장 상태
@@ -64,7 +68,10 @@ function Layout() {
             <Route path="/items" element={<ItemManagement />} />
             <Route path="/packaging" element={<PackagingMaster />} />
             <Route path="/documents" element={<DocumentManagement />} />
+            <Route path="/epr-evaluation" element={<EprEvaluationMaster />} />
             <Route path="/epr" element={<EprReporting />} />
+            {/* ✨ 기준관리 MDM 라우팅 */}
+            <Route path="/master-data" element={<MasterDataManagement />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
@@ -79,6 +86,8 @@ function App() {
   const fetchPackagingData = usePackagingStore((state) => state.fetchData);
   const fetchDocumentData = useDocumentStore((state) => state.fetchData);
   const fetchEprData = useEprStore((state) => state.fetchData);
+  const fetchEprEvaluations = useEprEvaluationStore((state) => state.fetchData);
+  const fetchAllMasterData = useMasterDataStore((state) => state.fetchAllMasterData); // ✨
 
   // 앱 로드 시 테마 초기화 및 데이터 로드
   useEffect(() => {
@@ -87,7 +96,9 @@ function App() {
     fetchPackagingData(); 
     fetchDocumentData(); 
     fetchEprData(); 
-  }, [initTheme, fetchSettingsData, fetchPackagingData, fetchDocumentData, fetchEprData]);
+    fetchEprEvaluations();
+    fetchAllMasterData(); // ✨ MDM 5개 테이블 전체 선로드
+  }, [initTheme, fetchSettingsData, fetchPackagingData, fetchDocumentData, fetchEprData, fetchEprEvaluations, fetchAllMasterData]);
 
   return (
     <BrowserRouter>

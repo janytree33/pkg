@@ -279,13 +279,25 @@ export default function ProductListPanel() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              상품명 (국문) <span className="text-red-500">*</span>
+              제품명(국문) <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              placeholder="예: 수분크림 100ml"
+              placeholder="예) 수분크림 100ml"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              제품명(영문)
+            </label>
+            <input
+              type="text"
+              value={formData.nameEn || ''}
+              onChange={e => setFormData({ ...formData, nameEn: e.target.value })}
+              placeholder="Ex) Moisture Cream 100ml"
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
           </div>

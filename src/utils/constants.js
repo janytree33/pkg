@@ -250,13 +250,15 @@ export const EPR_EXCEL_COLUMNS = {
   ],
 };
 
-// ─── 사이드바 메뉴 ───
 export const SIDEBAR_MENUS = [
   { id: 'dashboard', label: '대시보드', path: '/', icon: 'LayoutDashboard' },
   { id: 'items', label: '품목 및 완제품 관리', path: '/items', icon: 'Package' },
-  { id: 'packaging', label: '포장재 마스터 관리', path: '/packaging', icon: 'Package' },
+  { id: 'packaging', label: '포장재 마스터 관리', path: '/packaging', icon: 'Layers' },
   { id: 'documents', label: '문서발행 관리', path: '/documents', icon: 'FileText' },
+  { id: 'epr-evaluation', label: 'EPR 재질·구조 평가 관리', path: '/epr-evaluation', icon: 'ClipboardCheck' },
   { id: 'epr', label: 'EPR 실적신고 관리', path: '/epr', icon: 'BarChart3' },
+  // ✨ 기준관리 MDM — 5개 마스터 테이블(화장품 유형, 포장재, 분리배출, 재활용 등급, KECO 평가기준)
+  { id: 'master-data', label: '기준관리 MDM', path: '/master-data', icon: 'Database' },
   { id: 'settings', label: '기준 및 계정관리', path: '/settings', icon: 'Settings' },
 ];
 

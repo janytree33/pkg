@@ -9,9 +9,12 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
+  Layers,
   FileText,
+  ClipboardCheck,
   BarChart3,
   Settings,
+  Database,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -21,9 +24,12 @@ import { SIDEBAR_MENUS } from '../../utils/constants';
 const iconMap = {
   LayoutDashboard,
   Package,
+  Layers,
   FileText,
+  ClipboardCheck,
   BarChart3,
-  Settings
+  Settings,
+  Database,  // ✨ 기준관리 MDM 메뉴용 아이콘
 };
 
 export default function Sidebar({ collapsed, onToggle, isOpenMobile }) {

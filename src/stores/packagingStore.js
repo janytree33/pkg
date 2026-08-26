@@ -26,6 +26,7 @@ const usePackagingStore = create(
           regNo: c.reg_no || '',
           code: c.code || '',
           name: c.name || '',
+          nameEn: c.name_en || '',
           spec: c.spec || '',
           partType: c.part_type || '', 
           subComponents: c.sub_components || [], 
@@ -39,7 +40,12 @@ const usePackagingStore = create(
           specFile: c.supplier_spec_doc || '',
           specFileData: c.spec_file_data || null,
           specFileName: c.spec_file_name || null,
+          specFileName: c.spec_file_name || null,
           description: c.notes || '',
+          eprSetId: c.epr_set_id || null,
+          rawMaterials: c.raw_materials || '',
+          kecoTypeCode: c.keco_type_code || '',
+          kecoEvaluationData: c.keco_evaluation_data || {},
           createdAt: c.created_at,
         }));
 
@@ -82,6 +88,7 @@ const usePackagingStore = create(
               id: String(v.id), 
               version: v.version || '1.0',
               isConfirmed: Boolean(v.is_confirmed),
+              eprEvaluationId: v.epr_evaluation_id || null,
               createdAt: v.created_at,
               bomItems: (v.bom_items || []).map(b => {
                 const comp = components.find(c => String(c.id) === String(b.component_id));
@@ -138,6 +145,7 @@ const usePackagingStore = create(
         reg_no: component.regNo || '',
         code: component.code,
         name: component.name,
+        name_en: component.nameEn || '',
         spec: component.spec || '',
         part_type: component.partType || '기타',
         sub_components: component.subComponents || [],
@@ -148,7 +156,11 @@ const usePackagingStore = create(
         weight_g: component.weight || component.weightPerUnit || 0,
         supplier: component.supplier || '',
         supplier_spec_doc: component.specFiles ? JSON.stringify(component.specFiles) : (component.specFile || ''),
-        notes: component.remark || component.description || ''
+        notes: component.remark || component.description || '',
+        epr_set_id: component.eprSetId || null,
+        raw_materials: component.rawMaterials || '',
+        keco_type_code: component.kecoTypeCode || '',
+        keco_evaluation_data: component.kecoEvaluationData || {}
       };
 
       const { data, error } = await supabase.from('packaging_components').insert([payload]).select().single();
@@ -165,15 +177,35 @@ const usePackagingStore = create(
     },
 
     updatePackagingComponent: async (id, updates) => {
+      const { packagingComponents } = get();
+      const currentComp = packagingComponents.find(c => String(c.id) === String(id));
+      const isGrouped = currentComp && currentComp.eprSetId;
+
+      // 1. 상태 업데이트
       set((state) => ({
-        packagingComponents: state.packagingComponents.map((c) =>
-          String(c.id) === String(id) ? { ...c, ...updates } : c
-        ),
+        packagingComponents: state.packagingComponents.map((c) => {
+          // 같은 세트인 경우 일부 데이터(평가 결과 등) 동기화
+          if (isGrouped && c.eprSetId === currentComp.eprSetId && String(c.id) !== String(id)) {
+             return {
+               ...c,
+               materialEvalResult: updates.materialEvalResult !== undefined ? updates.materialEvalResult : c.materialEvalResult,
+               kecoTypeCode: updates.kecoTypeCode !== undefined ? updates.kecoTypeCode : c.kecoTypeCode,
+               kecoEvaluationData: updates.kecoEvaluationData !== undefined ? updates.kecoEvaluationData : c.kecoEvaluationData,
+               specFile: updates.specFile !== undefined ? updates.specFile : c.specFile,
+               specFiles: updates.specFiles !== undefined ? updates.specFiles : c.specFiles
+             };
+          }
+          // 수정 대상인 경우 전체 업데이트
+          return String(c.id) === String(id) ? { ...c, ...updates } : c;
+        }),
       }));
-      const { error } = await supabase.from('packaging_components').update({
+
+      // 2. DB 업데이트 페이로드 구성
+      const payload = {
         reg_no: updates.regNo,
         code: updates.code,
         name: updates.name,
+        name_en: updates.nameEn,
         spec: updates.spec,
         part_type: updates.partType,
         sub_components: updates.subComponents || [],
@@ -185,12 +217,74 @@ const usePackagingStore = create(
         supplier: updates.supplier,
         supplier_spec_doc: updates.specFiles ? JSON.stringify(updates.specFiles) : (updates.specFile || ''),
         notes: updates.remark || updates.description,
+        epr_set_id: updates.eprSetId,
+        raw_materials: updates.rawMaterials,
+        keco_type_code: updates.kecoTypeCode,
+        keco_evaluation_data: updates.kecoEvaluationData,
         updated_at: new Date().toISOString()
-      }).eq('id', id);
+      };
+
+      // undefined 속성 제거
+      Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+      const { error } = await supabase.from('packaging_components').update(payload).eq('id', id);
       
       if (error) {
         console.error("업데이트 실패:", error);
         alert(`저장에 실패했습니다. DB 설정을 확인해 주세요.\n(에러: ${error.message})`);
+        return false;
+      }
+
+      // 같은 그룹핑 된 부자재도 DB 동기화 처리
+      if (isGrouped && (updates.materialEvalResult !== undefined || updates.kecoTypeCode !== undefined || updates.kecoEvaluationData !== undefined || updates.specFile !== undefined || updates.specFiles !== undefined)) {
+        const syncPayload = { updated_at: new Date().toISOString() };
+        if (updates.materialEvalResult !== undefined) syncPayload.material_eval_result = updates.materialEvalResult;
+        if (updates.kecoTypeCode !== undefined) syncPayload.keco_type_code = updates.kecoTypeCode;
+        if (updates.kecoEvaluationData !== undefined) syncPayload.keco_evaluation_data = updates.kecoEvaluationData;
+        if (updates.specFile !== undefined || updates.specFiles !== undefined) {
+           syncPayload.supplier_spec_doc = updates.specFiles ? JSON.stringify(updates.specFiles) : (updates.specFile || '');
+        }
+        await supabase.from('packaging_components')
+           .update(syncPayload)
+           .eq('epr_set_id', currentComp.eprSetId)
+           .neq('id', id);
+      }
+
+      return true;
+    },
+
+    // ─── EPR 세트 그룹핑 관리 ───
+    groupPackagingComponents: async (ids, setId) => {
+      set((state) => ({
+        packagingComponents: state.packagingComponents.map(c => 
+          ids.includes(String(c.id)) ? { ...c, eprSetId: setId } : c
+        )
+      }));
+
+      const { error } = await supabase.from('packaging_components')
+        .update({ epr_set_id: setId, updated_at: new Date().toISOString() })
+        .in('id', ids);
+
+      if (error) {
+        alert("세트 그룹핑에 실패했습니다: " + error.message);
+        return false;
+      }
+      return true;
+    },
+
+    ungroupPackagingComponents: async (ids) => {
+      set((state) => ({
+        packagingComponents: state.packagingComponents.map(c => 
+          ids.includes(String(c.id)) ? { ...c, eprSetId: null } : c
+        )
+      }));
+
+      const { error } = await supabase.from('packaging_components')
+        .update({ epr_set_id: null, updated_at: new Date().toISOString() })
+        .in('id', ids);
+
+      if (error) {
+        alert("세트 해제에 실패했습니다: " + error.message);
         return false;
       }
       return true;
@@ -201,6 +295,55 @@ const usePackagingStore = create(
         packagingComponents: state.packagingComponents.filter((c) => String(c.id) !== String(id)),
       }));
       await supabase.from('packaging_components').delete().eq('id', id);
+    },
+
+    duplicatePackagingComponent: async (id) => {
+      const { packagingComponents } = get();
+      const comp = packagingComponents.find(c => String(c.id) === String(id));
+      if (!comp) return null;
+
+      const payload = {
+        reg_no: comp.regNo || '',
+        code: `${comp.code}-COPY-${Math.floor(Math.random() * 1000)}`,
+        name: `${comp.name} (복사본)`,
+        name_en: `${comp.nameEn} (Copy)`,
+        spec: comp.spec || '',
+        part_type: comp.partType || '기타',
+        sub_components: comp.subComponents || [],
+        material: comp.material || '',
+        eval_type: comp.evalType || '미평가',
+        material_eval_result: comp.materialEvalResult || '미평가',
+        container_type: comp.containerType || '',
+        weight_g: comp.weight || comp.weightPerUnit || 0,
+        supplier: comp.supplier || '',
+        supplier_spec_doc: comp.specFiles ? JSON.stringify(comp.specFiles) : (comp.specFile || ''),
+        notes: comp.remark || comp.description || '',
+        epr_set_id: null, // 복제된 항목은 초기화
+        raw_materials: comp.rawMaterials || '',
+        keco_type_code: comp.kecoTypeCode || '',
+        keco_evaluation_data: comp.kecoEvaluationData || {}
+      };
+
+      const { data, error } = await supabase.from('packaging_components').insert([payload]).select().single();
+      if (error) {
+        alert("복제 중 오류 발생: " + error.message);
+        return null;
+      }
+
+      if (data) {
+        const newComponent = { 
+          ...comp, 
+          id: String(data.id), 
+          code: payload.code, 
+          name: payload.name, 
+          name_en: payload.nameEn || '',
+          eprSetId: null, 
+          createdAt: data.created_at 
+        };
+        set((state) => ({ packagingComponents: [...state.packagingComponents, newComponent] }));
+        return newComponent;
+      }
+      return null;
     },
 
     addFinishedProduct: async (product) => {
@@ -269,7 +412,7 @@ const usePackagingStore = create(
 
     uploadComponentsFromExcel: async (components) => {
       const payload = components.map(c => ({
-        reg_no: c.regNo || '', code: c.code, name: c.name, spec: c.spec || '',
+        reg_no: c.regNo || '', code: c.code, name: c.name, name_en: c.nameEn || '', spec: c.spec || '',
         part_type: c.partType || '기타', sub_components: c.subComponents || [], material: c.material || '',
         container_type: c.containerType || c.container_type || '',
         weight_g: c.weightPerUnit || c.weight || 0, notes: c.remark || '',
@@ -479,6 +622,37 @@ const usePackagingStore = create(
 
       if (targetVersion.id && !String(targetVersion.id).startsWith('ver_')) {
         await supabase.from('product_versions').update({ is_confirmed: nextConfirmedState }).eq('id', targetVersion.id);
+      }
+    },
+
+    linkEprEvaluation: async (productId, versionIndex, eprEvaluationId) => {
+      const products = get().finishedProducts;
+      const p = products.find(prod => String(prod.id) === String(productId));
+      if (!p || !p.versions) return;
+
+      const safeIndex = Math.min(Math.max(0, versionIndex || 0), p.versions.length - 1);
+      const targetVersion = p.versions[safeIndex];
+      if (!targetVersion) return;
+
+      if (targetVersion.isConfirmed) {
+        alert("🔒 확정된 BOM 버전입니다. 평가결과서를 변경할 수 없습니다.");
+        return;
+      }
+
+      set((state) => ({
+        finishedProducts: state.finishedProducts.map((prod) => {
+          if (String(prod.id) !== String(productId)) return prod;
+          const newVersions = [...prod.versions];
+          newVersions[safeIndex] = {
+            ...newVersions[safeIndex],
+            eprEvaluationId: eprEvaluationId
+          };
+          return { ...prod, versions: newVersions };
+        }),
+      }));
+
+      if (targetVersion.id && !String(targetVersion.id).startsWith('ver_')) {
+        await supabase.from('product_versions').update({ epr_evaluation_id: eprEvaluationId }).eq('id', targetVersion.id);
       }
     },
 

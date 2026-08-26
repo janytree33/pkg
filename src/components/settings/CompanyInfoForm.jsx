@@ -143,7 +143,10 @@ export default function CompanyInfoForm() {
             <InputField label="회사명 (국문)" field="nameKo" placeholder="주식회사 제니트리" form={form} handleChange={handleChange} />
             <InputField label="회사명 (영문)" field="nameEn" placeholder="Janytree Inc." form={form} handleChange={handleChange} />
             <InputField label="사업자등록번호" field="businessNo" placeholder="123-45-67890" form={form} handleChange={handleChange} />
-            <InputField label="대표자명" field="ceoName" placeholder="대표자 성명" form={form} handleChange={handleChange} />
+            <div className="grid grid-cols-2 gap-4 col-span-1 md:col-span-1">
+              <InputField label="대표자명(국문)" field="ceoName" placeholder="홍길동" form={form} handleChange={handleChange} />
+              <InputField label="대표자명(영문)" field="ceoNameEn" placeholder="Hong Gil-dong" form={form} handleChange={handleChange} />
+            </div>
             <div className="md:col-span-2">
               <InputField label="주소 (국문)" field="addressKo" placeholder="서울시 금천구..." form={form} handleChange={handleChange} />
             </div>

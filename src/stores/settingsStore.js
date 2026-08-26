@@ -24,6 +24,7 @@ const useSettingsStore = create(
         fax: '02.868.1920',
         email: 'global@janytree.com',
         ceoName: '',
+        ceoNameEn: '',    // 💡 [추가] 대표자 영문명
         logo: null,       // Supabase Storage Public URL
         stamp: null,      // 국문 직인 URL
         stampEn: null,    // 💡 [추가] 영문 직인 URL
@@ -73,24 +74,34 @@ const useSettingsStore = create(
         password: '',
       })),
 
-      // ─── 포장형태 관리 ───
-      packagingTypes: DEFAULT_PART_TYPES.map(name => ({
-        id: generateId(),
-        name: name,
-        createdAt: new Date().toISOString()
-      })),
+      // ─── 포장형태 관리 (DB 연동) ───
+      packagingTypes: [],
+
       
-      addPackagingType: (name) => set((state) => ({
-        packagingTypes: [...state.packagingTypes, { id: generateId(), name, createdAt: new Date().toISOString() }]
-      })),
+      addPackagingType: async (name, nameEn) => {
+        const payload = { name, name_en: nameEn };
+        const { data, error } = await supabase.from('packaging_types').insert([payload]).select().single();
+        if (data) {
+          set((state) => ({ packagingTypes: [...state.packagingTypes, { id: data.id, name: data.name, nameEn: data.name_en, createdAt: data.created_at }] }));
+        }
+      },
       
-      updatePackagingType: (id, name) => set((state) => ({
-        packagingTypes: state.packagingTypes.map(pt => pt.id === id ? { ...pt, name } : pt)
-      })),
+      updatePackagingType: async (id, name, nameEn) => {
+        const payload = { name, name_en: nameEn, updated_at: new Date().toISOString() };
+        const { error } = await supabase.from('packaging_types').update(payload).eq('id', id);
+        if (!error) {
+          set((state) => ({
+            packagingTypes: state.packagingTypes.map(pt => pt.id === id ? { ...pt, name, nameEn } : pt)
+          }));
+        }
+      },
       
-      deletePackagingType: (id) => set((state) => ({
-        packagingTypes: state.packagingTypes.filter(pt => pt.id !== id)
-      })),
+      deletePackagingType: async (id) => {
+        const { error } = await supabase.from('packaging_types').delete().eq('id', id);
+        if (!error) {
+          set((state) => ({ packagingTypes: state.packagingTypes.filter(pt => pt.id !== id) }));
+        }
+      },
 
       // ─── 테마 (라이트/다크) ───
       theme: 'light',
@@ -114,6 +125,7 @@ const useSettingsStore = create(
               nameEn: companyData.name_en,
               businessNo: companyData.business_no,
               ceoName: companyData.ceo_name,
+              ceoNameEn: companyData.ceo_name_en || '',
               addressKo: companyData.address_ko,
               addressEn: companyData.address_en,
               phone: companyData.phone,
@@ -128,6 +140,20 @@ const useSettingsStore = create(
           const { data: accountsData } = await supabase
             .from('accounts')
             .select('*');
+
+          const { data: typesData } = await supabase
+            .from('packaging_types')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+          if (typesData) {
+            set({ packagingTypes: typesData.map(t => ({
+              id: t.id,
+              name: t.name,
+              nameEn: t.name_en,
+              createdAt: t.created_at
+            })) });
+          }
 
           if (accountsData && accountsData.length > 0) {
             set({ eprAccounts: accountsData.map(a => ({
@@ -159,6 +185,7 @@ const useSettingsStore = create(
           name_en: companyInfo.nameEn,
           business_no: companyInfo.businessNo,
           ceo_name: companyInfo.ceoName,
+          ceo_name_en: companyInfo.ceoNameEn,
           address_ko: companyInfo.addressKo,
           address_en: companyInfo.addressEn,
           phone: companyInfo.phone,

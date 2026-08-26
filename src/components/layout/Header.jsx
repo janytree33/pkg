@@ -31,7 +31,6 @@ export default function Header({ onMenuToggle }) {
     >
       {/* 좌측: JT 로고 및 햄버거 메뉴 */}
       <div className="flex items-center gap-3 flex-1">
-        {/* 💡 lg:hidden을 제거하여 PC/모바일 상관없이 항상 보이도록 수정! */}
         <button 
           onClick={onMenuToggle}
           className="flex items-center justify-center p-1.5 -ml-2 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
@@ -39,16 +38,7 @@ export default function Header({ onMenuToggle }) {
         >
           <Menu size={22} />
         </button>
-        <img
-          src="/JT_Logo_Horizontal_copy.svg"
-          alt="Janytree Logo"
-          className="h-7 object-contain"
-          style={{ maxWidth: '160px' }}
-        />
-        {/* 구분선 */}
-        <div className="w-px h-5 bg-slate-200 mx-1" />
-        {/* 현재 페이지명 */}
-        <span className="text-sm font-medium text-slate-500">{pageTitle}</span>
+        <h1 className="text-lg font-extrabold text-slate-800 tracking-tight ml-1">{pageTitle}</h1>
       </div>
 
       {/* 중앙: 앱 공식 타이틀 */}

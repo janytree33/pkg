@@ -8,7 +8,9 @@ import usePackagingStore from '../../stores/packagingStore';
 import DataTable from '../common/DataTable';
 import PackagingComponentForm from './PackagingComponentForm';
 import BomComponentSelector from './BomComponentSelector';
-import { Plus, Copy, Trash2, FlaskConical, Lock, Unlock, CheckCircle2 } from 'lucide-react';
+import EprEvaluationSelector from '../epr/EprEvaluationSelector';
+import useEprEvaluationStore from '../../stores/eprEvaluationStore';
+import { Plus, Copy, Trash2, FlaskConical, Lock, Unlock, CheckCircle2, Link, Link2Off } from 'lucide-react';
 import { PLASTIC_MATERIALS, EPR_MATERIAL_GROUPS } from '../../utils/constants';
 
 export default function BomTab() {
@@ -21,13 +23,16 @@ export default function BomTab() {
     createNewVersion,
     addPackagingComponent,
     packagingComponents,
-    toggleVersionConfirm
+    toggleVersionConfirm,
+    linkEprEvaluation
   } = usePackagingStore();
+  const eprEvaluations = useEprEvaluationStore(state => state.evaluations);
 
   const product = finishedProducts.find(p => String(p.id) === String(selectedProductId));
   const [selectedVersionIdx, setSelectedVersionIdx] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [isEprSelectorOpen, setIsEprSelectorOpen] = useState(false);
   const [activeProcessType, setActiveProcessType] = useState('충진');
   const [productionQty, setProductionQty] = useState(1);
 
@@ -37,6 +42,7 @@ export default function BomTab() {
   const currentVersionIdx = Math.min(selectedVersionIdx, Math.max(0, versions.length - 1));
   const currentVersion = versions[currentVersionIdx];
   const isConfirmed = currentVersion?.isConfirmed || false;
+  const linkedEprEval = eprEvaluations.find(e => String(e.id) === String(currentVersion?.eprEvaluationId));
 
   const handleCreateNewVersion = () => {
     createNewVersion(product.id);
@@ -116,8 +122,30 @@ export default function BomTab() {
     if (grade.includes('어려움')) return 4;
     return 99;
   };
+  // 비대상 자재 판별 공통 함수
+  const checkIsComponentTarget = (comp) => {
+    if (!comp) return false;
+    const checkIsTarget = (material, containerType) => {
+      const group = EPR_MATERIAL_GROUPS.find(g => g.materials.includes(material));
+      if (group && containerType && !containerType.startsWith('신고제외')) {
+        return true; // 신고 대상
+      }
+      return false; // 비대상
+    };
+    if (comp.subComponents && comp.subComponents.length > 0) {
+      return comp.subComponents.some(sub => 
+        checkIsTarget(sub.material || '', sub.containerType || comp.containerType || '')
+      );
+    }
+    return checkIsTarget(comp.material || '', comp.containerType || '');
+  };
 
   const calculateFinalGrade = () => {
+    // 🌟 EPR 평가결과서가 수동으로 연결된 경우 해당 등급을 강제 승계합니다
+    if (linkedEprEval) {
+      return linkedEprEval.evalGrade || '미평가';
+    }
+
     if (!currentVersion?.bomItems || currentVersion.bomItems.length === 0) return '등록된 부자재 없음';
     
     let maxRank = 0;
@@ -127,27 +155,7 @@ export default function BomTab() {
     for (const item of currentVersion.bomItems) {
       const comp = packagingComponents.find(c => String(c.id) === String(item.componentId));
       if (!comp) continue;
-
-      // 비대상 자재 판별 함수
-      const checkIsTarget = (material, containerType) => {
-        const group = EPR_MATERIAL_GROUPS.find(g => g.materials.includes(material));
-        if (group && containerType && !containerType.startsWith('신고제외')) {
-          return true; // 신고 대상
-        }
-        return false; // 비대상
-      };
-
-      let isTarget = false;
-
-      // 다부속 자재인 경우 부속품 중 하나라도 신고 대상이면 대상
-      if (comp.subComponents && comp.subComponents.length > 0) {
-        isTarget = comp.subComponents.some(sub => 
-          checkIsTarget(sub.material || '', sub.containerType || comp.containerType || '')
-        );
-      } else {
-        isTarget = checkIsTarget(comp.material || '', comp.containerType || '');
-      }
-
+      const isTarget = checkIsComponentTarget(comp);
       // 비대상 자재는 등급 계산에서 완전히 제외
       if (!isTarget) continue;
 
@@ -249,19 +257,29 @@ export default function BomTab() {
     {
       label: '재질평가결과',
       render: (_, row) => {
+        // 🌟 연동된 EPR 평가가 있다면, 모든 대상 부자재의 평가 결과를 해당 번호+등급으로 일괄 변경 노출
         const comp = packagingComponents.find(c => String(c.id) === String(row.componentId));
-        const evalResult = comp?.materialEvalResult || '미평가';
+        const isTarget = checkIsComponentTarget(comp);
+        
+        let evalResult = comp?.materialEvalResult || '미평가';
+        if (linkedEprEval && isTarget) {
+           evalResult = `${linkedEprEval.certNo} (${linkedEprEval.evalGrade})`;
+        }
+
         const isUnevaluated = evalResult === '미평가';
         const isBad = evalResult.includes('어려움');
         const isExempt = evalResult.includes('제외') || evalResult.includes('비대상') || evalResult === '대상제외';
+        const isLinked = !!linkedEprEval;
         
         return (
           <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold border ${
             isExempt ? 'bg-purple-50 text-purple-600 border-purple-200' :
+            isLinked ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
             isUnevaluated ? 'bg-slate-50 text-slate-500 border-slate-200' : 
             isBad ? 'bg-red-50 text-red-600 border-red-200' :
             'bg-blue-50 text-blue-600 border-blue-200'
           }`}>
+            {isLinked && <Link size={12} className="mr-1 inline" />}
             {evalResult}
           </span>
         );
@@ -427,6 +445,35 @@ export default function BomTab() {
         </div>
       </div>
 
+      {/* EPR 평가서 연동 표시부 */}
+      <div className="flex flex-wrap items-center justify-between p-3 border border-indigo-100 rounded-xl bg-indigo-50/50 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+            <Link size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-indigo-900">EPR 평가결과서 연동</h3>
+            {linkedEprEval ? (
+              <p className="text-xs text-indigo-700 mt-0.5">
+                현재 BOM은 <span className="font-bold">[{linkedEprEval.certNo}] {linkedEprEval.evalName}</span> 평가에 연동되었습니다. (부자재 일괄 승계)
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 mt-0.5">이 완제품 버전에 대한 공단 평가결과서가 있다면 연결해주세요.</p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => setIsEprSelectorOpen(true)}
+          className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm border transition-colors ${
+            linkedEprEval 
+              ? 'bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50' 
+              : 'bg-indigo-600 text-white border-transparent hover:bg-indigo-700'
+          }`}
+        >
+          {linkedEprEval ? '연결 변경/해제' : '평가결과서 연결하기'}
+        </button>
+      </div>
+
       <div
         className="flex items-center gap-4 p-4 rounded-xl border border-emerald-100"
         style={{ background: 'linear-gradient(90deg, #f0fdf9 0%, #ecfeff 100%)' }}
@@ -538,6 +585,19 @@ export default function BomTab() {
         onSelect={handleSelectComponents}
         onOpenNewForm={() => setIsFormOpen(true)}
         processType={activeProcessType} 
+      />
+      
+      <EprEvaluationSelector
+        isOpen={isEprSelectorOpen}
+        onClose={() => setIsEprSelectorOpen(false)}
+        onSelect={async (evaluation) => {
+           if (evaluation) {
+              await linkEprEvaluation(product.id, currentVersionIdx, evaluation.id);
+           } else {
+              await linkEprEvaluation(product.id, currentVersionIdx, null);
+           }
+           setIsEprSelectorOpen(false);
+        }}
       />
     </div>
   );

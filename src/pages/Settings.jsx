@@ -12,39 +12,43 @@ import EprExemptionPanel from '../components/settings/EprExemptionPanel';
 import PageBanner from '../components/common/PageBanner';
 import useSettingsStore from '../stores/settingsStore';
 
-// ─── 포장형태 관리를 위한 미니 화면 컴포넌트 ───
+// ─── 포장형태 관리(미니 화면 컴포넌트) ───
 function PackagingTypeManagement() {
   const { packagingTypes, addPackagingType, updatePackagingType, deletePackagingType } = useSettingsStore();
   
   const [newValue, setNewValue] = useState('');
+  const [newEnValue, setNewEnValue] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [editEnValue, setEditEnValue] = useState('');
 
   const handleAdd = () => {
     if (!newValue.trim()) return;
-    addPackagingType(newValue.trim());
+    addPackagingType(newValue.trim(), newEnValue.trim());
     setNewValue('');
+    setNewEnValue('');
   };
 
   const handleEditStart = (type) => {
     setEditingId(type.id);
     setEditValue(type.name);
+    setEditEnValue(type.nameEn || '');
   };
 
   const handleEditSave = (id) => {
     if (!editValue.trim()) return;
-    updatePackagingType(id, editValue.trim());
+    updatePackagingType(id, editValue.trim(), editEnValue.trim());
     setEditingId(null);
   };
 
   const handleEditCancel = () => {
     setEditingId(null);
     setEditValue('');
+    setEditEnValue('');
   };
 
-  // 🚨 [추가된 부분] 삭제 전 확인 팝업 띄우기
   const handleDelete = (id, name) => {
-    if (window.confirm(`'${name}' 항목을 정말 삭제하시겠습니까?\n(이미 사용 중인 포장형태인 경우 문제가 발생할 수 있습니다.)`)) {
+    if (window.confirm(`'${name}' 항목을 정말 삭제하시겠습니까?\n(이미 사용 중인 포장형태일 경우 문제가 발생할 수 있습니다.)`)) {
       deletePackagingType(id);
     }
   };
@@ -54,7 +58,7 @@ function PackagingTypeManagement() {
       <div className="mb-6">
         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">포장형태 관리</h3>
         <p className="text-sm text-slate-500">
-          제품 등록 시 사용할 포장형태(부자재)의 종류를 관리합니다. (예: 용기, 캡/뚜껑, 단상자 등)
+          제품 등록 시 사용될 포장형태(부자재)의 종류를 관리합니다. (예: 용기, 캡, 단상자)
         </p>
       </div>
 
@@ -63,7 +67,15 @@ function PackagingTypeManagement() {
           type="text"
           value={newValue}
           onChange={e => setNewValue(e.target.value)}
-          placeholder="새로운 포장형태 입력"
+          placeholder="새로운 포장형태명(국문)"
+          className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <input 
+          type="text"
+          value={newEnValue}
+          onChange={e => setNewEnValue(e.target.value)}
+          placeholder="영문명 (Ex: Carton)"
           className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
         />
@@ -80,14 +92,15 @@ function PackagingTypeManagement() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3 font-medium">포장형태명</th>
+              <th className="px-4 py-3 font-medium">포장형태명(국문)</th>
+              <th className="px-4 py-3 font-medium">영문명(English)</th>
               <th className="px-4 py-3 font-medium text-right w-32">관리</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {packagingTypes?.map((type) => (
               <tr key={type.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">
+                <td className="px-4 py-3 text-slate-800 dark:text-slate-200 w-1/3">
                   {editingId === type.id ? (
                     <input 
                       type="text"
@@ -99,6 +112,19 @@ function PackagingTypeManagement() {
                     />
                   ) : (
                     type.name
+                  )}
+                </td>
+                <td className="px-4 py-3 text-slate-800 dark:text-slate-200 w-1/3">
+                  {editingId === type.id ? (
+                    <input 
+                      type="text"
+                      value={editEnValue}
+                      onChange={e => setEditEnValue(e.target.value)}
+                      className="w-full px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-600"
+                      onKeyDown={(e) => e.key === 'Enter' && handleEditSave(type.id)}
+                    />
+                  ) : (
+                    <span className="text-slate-500">{type.nameEn || '-'}</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">

@@ -1,6 +1,7 @@
 import React, { forwardRef, useMemo } from 'react';
 import useSettingsStore from '../../stores/settingsStore';
 import usePackagingStore from '../../stores/packagingStore';
+import useEprEvaluationStore from '../../stores/eprEvaluationStore';
 import { formatDateForSpec, EPR_MATERIAL_GROUPS, EPR_EXCLUDED_MATERIALS } from '../../utils/constants';
 
 /**
@@ -53,17 +54,17 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
   // ─── 스토어에서 회사 정보와 포장재 마스터 데이터를 불러옵니다 ───
   const { companyInfo } = useSettingsStore();
   const { packagingComponents } = usePackagingStore();
+  const eprEvaluations = useEprEvaluationStore(state => state.evaluations);
 
   const isKo = docLanguage === 'ko';
 
-  // linkedEprEval: EPR 평가 연동 데이터 (현재 미연동 상태 — 추후 eprEvaluationStore 연결 예정)
-  // ReferenceError 방지를 위해 null로 초기화합니다.
-  const linkedEprEval = null;
-
+  // 선택된 제품 정보가 없다면 아래에서 early return 처리합니다.
 
   const version = product?.versions && product.versions.length > 0
     ? product.versions[versionIndex] || product.versions[0]
     : { version: '1.0', bomItems: [] };
+
+  const linkedEprEval = eprEvaluations.find(e => String(e.id) === String(version?.eprEvaluationId));
 
   // ═══════════════════════════════════════════════════════════════
   // 핵심 로직: BOM 아이템을 재질 그룹별로 분류합니다.
@@ -186,13 +187,10 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
     let hasTargetItems = false;
 
     // 비대상 부자재(exemptItems)를 제외한 신고 대상(groupedItems) 부자재만 평가합니다.
-    Object.entries(groupedItems).forEach(([groupName, groupArr]) => {
+    Object.values(groupedItems).forEach(groupArr => {
       groupArr.forEach(displayItem => {
         hasTargetItems = true;
-        let grade = displayItem.comp.materialEvalResult || '미평가';
-        if (linkedEprEval && groupName !== 'exempt') {
-          grade = linkedEprEval.evalGrade || '미평가';
-        }
+        const grade = displayItem.comp.materialEvalResult || '미평가';
         
         if (grade.includes('미평가')) {
           hasUnevaluated = true;
@@ -259,24 +257,13 @@ const SpecificationPreview = forwardRef(({ product, versionIndex, certNo, remark
           <td style={{ padding: '5px 4px', fontWeight: '500', wordBreak: 'break-all', fontSize: '10px' }}>{comp.nameEn || comp.name}</td>
           <td style={{ padding: '5px 4px', color: '#4b5563', wordBreak: 'break-all', fontSize: '10px' }}>{comp.material || '-'}</td>
           {(showEvalResult && !forceHideEval) && <td style={{ padding: '5px 4px', color: '#3b82f6', fontWeight: '600', wordBreak: 'break-all', fontSize: '10px' }}>
-            {(() => {
-              let evalResult = comp.materialEvalResult || '미평가';
-              if (linkedEprEval && groupName !== 'exempt') {
-                evalResult = `${linkedEprEval.certNo} (${linkedEprEval.evalGrade})`;
-              }
-              if (forceHideEval === false && groupName === 'exempt') evalResult = '대상제외';
-
-              if (isKo) {
-                return evalResult;
-              } else {
-                if (evalResult.includes('재활용 최우수')) return 'Best';
-                if (evalResult.includes('재활용 우수')) return 'Excellent';
-                if (evalResult.includes('재활용 보통')) return 'Normal';
-                if (evalResult.includes('재활용 어려움')) return 'Difficult';
-                if (evalResult.includes('대상제외') || evalResult.includes('비대상') || groupName === 'exempt') return 'Exempt';
-                return 'Pending';
-              }
-            })()}
+            {isKo 
+              ? (comp.materialEvalResult === '대상제외' || forceHideEval === false && groupName === 'exempt' ? '대상제외' : comp.materialEvalResult || '미평가')
+              : (comp.materialEvalResult === '재활용 최우수' ? 'Best' :
+                 comp.materialEvalResult === '재활용 우수' ? 'Excellent' :
+                 comp.materialEvalResult === '재활용 보통' ? 'Normal' :
+                 comp.materialEvalResult === '재활용 어려움' ? 'Difficult' : 
+                 comp.materialEvalResult === '대상제외' || groupName === 'exempt' ? 'Exempt' : 'Pending')}
           </td>}
           <td style={{ padding: '5px 4px', color: '#6b7280', wordBreak: 'break-all', fontSize: '10px' }}>{comp.code || '-'}</td>
           <td style={{ padding: '5px 4px', color: '#6b7280', wordBreak: 'break-all', fontSize: '10px' }}>{comp.remark || comp.description || '-'}</td>

@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { CONTAINER_TYPE_MAP, MATERIAL_OPTIONS, DEFAULT_PART_TYPES } from '../../utils/constants';
-import { Upload, Download, Plus, Trash2 } from 'lucide-react';
+import { Upload, Download, Plus, Trash2, Layers, RefreshCw } from 'lucide-react';
 import usePackagingStore from '../../stores/packagingStore';
 
 export default function PackagingComponentForm({ isOpen, onClose, onSave, editData }) {
-  const { uploadComponentsFromExcel } = usePackagingStore();
+  const { packagingComponents, uploadComponentsFromExcel } = usePackagingStore();
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -15,13 +15,15 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
     spec: '',
     partType: DEFAULT_PART_TYPES[0], 
     material: '',
-    evalType: '미평가', // 평가 구분 추가
+    evalType: '미평가',
     materialEvalResult: '미평가',
     weightPerUnit: '',
     remark: '',
     subComponents: [], 
     specFiles: [],          
-    existingSpecFiles: []   
+    existingSpecFiles: [],
+    kecoTypeCode: '',
+    kecoEvaluationData: {}
   });
   
   const [isSaving, setIsSaving] = useState(false);
@@ -57,6 +59,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         regNo: editData.regNo || '',
         code: editData.code || '',
         name: editData.name || '',
+        nameEn: editData.nameEn || '',
         spec: editData.spec || '',
         partType: editData.partType || DEFAULT_PART_TYPES[0],
         containerType: getContainerLabel(editData.containerType),
@@ -65,19 +68,21 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         materialEvalResult: mappedEval,
         weightPerUnit: editData.weightPerUnit || editData.weight || '',
         remark: editData.remark || '',
-        // ✅ 서브컴포넌트도 동일하게 라벨로 변환 적용
         subComponents: (editData.subComponents || []).map(sub => ({
           ...sub,
           containerType: getContainerLabel(sub.containerType)
         })),
         specFiles: [],
-        existingSpecFiles: parsedFiles
+        existingSpecFiles: parsedFiles,
+        kecoTypeCode: editData.kecoTypeCode || '',
+        kecoEvaluationData: editData.kecoEvaluationData || {}
       });
     } else {
       setFormData({
         regNo: '',
         code: '',
         name: '',
+        nameEn: '',
         spec: '',
         partType: DEFAULT_PART_TYPES[0],
         containerType: '',
@@ -87,7 +92,9 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
         remark: '',
         subComponents: [],
         specFiles: [],
-        existingSpecFiles: []
+        existingSpecFiles: [],
+        kecoTypeCode: '',
+        kecoEvaluationData: {}
       });
     }
   }, [editData, isOpen]);
@@ -197,12 +204,22 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">부재료명</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">부자재명(국문)</label>
             <input 
               type="text" 
               value={formData.name} 
               onChange={e => setFormData({...formData, name: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">부자재명(영문)</label>
+            <input 
+              type="text" 
+              value={formData.nameEn || ''} 
+              onChange={e => setFormData({...formData, nameEn: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              placeholder="Ex) Cap"
             />
           </div>
           
@@ -258,62 +275,7 @@ export default function PackagingComponentForm({ isOpen, onClose, onSave, editDa
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">평가 구분</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="evalType"
-                  value="미평가"
-                  checked={formData.evalType === '미평가'}
-                  onChange={e => setFormData({...formData, evalType: e.target.value})}
-                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-slate-600">미평가</span>
-              </label>
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="evalType"
-                  value="자체평가"
-                  checked={formData.evalType === '자체평가'}
-                  onChange={e => setFormData({...formData, evalType: e.target.value})}
-                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-slate-600">자체(간이) 평가</span>
-              </label>
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="evalType"
-                  value="공인인증"
-                  checked={formData.evalType === '공인인증'}
-                  onChange={e => setFormData({...formData, evalType: e.target.value})}
-                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-slate-600">공인 기관 검사 완료</span>
-              </label>
-            </div>
-          </div>
-          
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <label className="block text-sm font-medium text-gray-700 mb-1">재질·구조 평가 결과</label>
-            <select 
-              value={formData.materialEvalResult} 
-              onChange={e => setFormData({...formData, materialEvalResult: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            >
-              <option value="미평가">미평가</option>
-              <option value="대상제외">대상제외</option>
-              <option value="재활용 최우수">재활용 최우수</option>
-              <option value="재활용 우수">재활용 우수</option>
-              <option value="재활용 보통">재활용 보통</option>
-              <option value="재활용 어려움">재활용 어려움</option>
-            </select>
-          </div>
-        </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
